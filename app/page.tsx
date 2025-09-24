@@ -23,7 +23,7 @@ export interface BusinessCardData {
   backgroundColor: string;
   textColor: string;
   createdAt: string;
-  // image: string;
+  image?: string;
 }
 
 export default function HomePage() {

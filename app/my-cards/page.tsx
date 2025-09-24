@@ -128,15 +128,24 @@ export default function MyCardsPage() {
                         {card.title} tại {card.company}
                       </CardDescription>
                     </div>
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{
-                        backgroundColor: card.textColor,
-                        color: card.backgroundColor,
-                      }}
-                    >
-                      {card.name.charAt(0).toUpperCase()}
-                    </div>
+                    {card.image ? (
+                      <img
+                        src={card.image}
+                        alt={card.name}
+                        className="w-10 h-10 rounded-full object-cover flex-shrink-0 border"
+                        style={{ borderColor: card.textColor }}
+                      />
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{
+                          backgroundColor: card.textColor,
+                          color: card.backgroundColor,
+                        }}
+                      >
+                        {card.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
 

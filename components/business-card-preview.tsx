@@ -1,44 +1,44 @@
-"use client"
+"use client";
 
-import type { BusinessCardData } from "@/app/page"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Mail, Phone, Globe, MapPin, Linkedin, Twitter, Share2, Copy } from "lucide-react"
-import { useState, useEffect } from "react"
+import type { BusinessCardData } from "@/app/page";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Mail, Phone, Globe, MapPin, Linkedin, Twitter, Share2, Copy } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface BusinessCardPreviewProps {
-  data: BusinessCardData
-  showShareUrl?: boolean
+  data: BusinessCardData;
+  showShareUrl?: boolean;
 }
 
 export function BusinessCardPreview({ data, showShareUrl }: BusinessCardPreviewProps) {
-  const [copied, setCopied] = useState(false)
-  const [shareUrl, setShareUrl] = useState("")
+  const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setShareUrl(`${window.location.origin}/card/${data.id}`)
+      setShareUrl(`${window.location.origin}/card/${data.id}`);
     }
-  }, [data.id])
+  }, [data.id]);
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy: ", err)
+      console.error("Failed to copy: ", err);
       // Fallback for older browsers
-      const textArea = document.createElement("textarea")
-      textArea.value = shareUrl
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand("copy")
-      document.body.removeChild(textArea)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-  }
+  };
 
   const shareViaWebShare = async () => {
     if (navigator.share) {
@@ -47,14 +47,14 @@ export function BusinessCardPreview({ data, showShareUrl }: BusinessCardPreviewP
           title: `Card Visit - ${data.name}`,
           text: `Xem card visit của ${data.name} - ${data.title} tại ${data.company}`,
           url: shareUrl,
-        })
+        });
       } catch (err) {
-        console.log("Error sharing:", err)
+        console.log("Error sharing:", err);
       }
     } else {
-      copyToClipboard()
+      copyToClipboard();
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -67,15 +67,24 @@ export function BusinessCardPreview({ data, showShareUrl }: BusinessCardPreviewP
       >
         <CardContent className="p-6">
           <div className="text-center mb-6">
-            <div
-              className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold"
-              style={{
-                backgroundColor: data.textColor,
-                color: data.backgroundColor,
-              }}
-            >
-              {data.name.charAt(0).toUpperCase()}
-            </div>
+            {data.image ? (
+              <img
+                src={data.image}
+                alt={data.name}
+                className="w-20 h-20 rounded-full mx-auto mb-4 object-cover border-2"
+                style={{ borderColor: data.textColor }}
+              />
+            ) : (
+              <div
+                className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold"
+                style={{
+                  backgroundColor: data.textColor,
+                  color: data.backgroundColor,
+                }}
+              >
+                {data.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <h2 className="text-2xl font-bold mb-1">{data.name}</h2>
             <p className="text-lg opacity-80 mb-1">{data.title}</p>
             <p className="font-semibold opacity-90">{data.company}</p>
@@ -183,5 +192,5 @@ export function BusinessCardPreview({ data, showShareUrl }: BusinessCardPreviewP
         </Card>
       )}
     </div>
-  )
+  );
 }
