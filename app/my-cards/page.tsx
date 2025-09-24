@@ -1,49 +1,49 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import type { BusinessCardData } from "@/app/page"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Eye, Edit, Trash2, Share2 } from "lucide-react"
-import { Navigation } from "@/components/navigation"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { BusinessCardData } from "@/app/page";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Eye, Edit, Trash2, Share2 } from "lucide-react";
+import { Navigation } from "@/components/navigation";
 
 export default function MyCardsPage() {
-  const router = useRouter()
-  const [cards, setCards] = useState<BusinessCardData[]>([])
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const [cards, setCards] = useState<BusinessCardData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadCards()
-  }, [])
+    loadCards();
+  }, []);
 
   const loadCards = () => {
     try {
-      const savedCards = JSON.parse(localStorage.getItem("businessCards") || "[]")
+      const savedCards = JSON.parse(localStorage.getItem("businessCards") || "[]");
       setCards(
         savedCards.sort(
           (a: BusinessCardData, b: BusinessCardData) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        ),
-      )
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      );
     } catch (error) {
-      console.error("Error loading cards:", error)
+      console.error("Error loading cards:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteCard = (cardId: string) => {
     if (confirm("Bạn có chắc chắn muốn xóa card visit này?")) {
-      const updatedCards = cards.filter((card) => card.id !== cardId)
-      localStorage.setItem("businessCards", JSON.stringify(updatedCards))
-      setCards(updatedCards)
+      const updatedCards = cards.filter((card) => card.id !== cardId);
+      localStorage.setItem("businessCards", JSON.stringify(updatedCards));
+      setCards(updatedCards);
     }
-  }
+  };
 
   const handleShareCard = async (card: BusinessCardData) => {
-    const url = `${window.location.origin}/card/${card.id}`
+    const url = `${window.location.origin}/card/${card.id}`;
 
     if (navigator.share) {
       try {
@@ -51,23 +51,23 @@ export default function MyCardsPage() {
           title: `Card Visit - ${card.name}`,
           text: `Xem card visit của ${card.name}`,
           url: url,
-        })
+        });
       } catch (error) {
-        copyToClipboard(url)
+        copyToClipboard(url);
       }
     } else {
-      copyToClipboard(url)
+      copyToClipboard(url);
     }
-  }
+  };
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      alert("Đã sao chép link!")
+      await navigator.clipboard.writeText(text);
+      alert("Đã sao chép link!");
     } catch (error) {
-      console.error("Failed to copy:", error)
+      console.error("Failed to copy:", error);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -80,7 +80,7 @@ export default function MyCardsPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -156,17 +156,27 @@ export default function MyCardsPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => router.push(`/card/${card.id}`)}
-                      className="flex-1"
+                      className="flex-1 cursor-pointer flex items-center justify-center"
                     >
                       <Eye className="w-3 h-3 mr-1" />
                       Xem
                     </Button>
 
-                    <Button size="sm" variant="outline" onClick={() => router.push(`/edit/${card.id}`)}>
-                      <Edit className="w-3 h-3" />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="cursor-pointer"
+                      onClick={() => router.push(`/edit/${card.id}`)}
+                    >
+                      <Edit className="w-3 h-3 " />
                     </Button>
 
-                    <Button size="sm" variant="outline" onClick={() => handleShareCard(card)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="cursor-pointer"
+                      onClick={() => handleShareCard(card)}
+                    >
                       <Share2 className="w-3 h-3" />
                     </Button>
 
@@ -174,7 +184,7 @@ export default function MyCardsPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDeleteCard(card.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
@@ -186,5 +196,5 @@ export default function MyCardsPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

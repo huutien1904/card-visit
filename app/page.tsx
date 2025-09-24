@@ -41,8 +41,9 @@ export default function HomePage() {
     setIsPreviewMode(true);
   };
 
-  const handleBackToForm = () => {
-    setIsPreviewMode(false);
+  const handleEditCard = () => {
+    // setIsPreviewMode(false);
+    router.push(`/edit/${cardData!.id}`);
   };
 
   return (
@@ -85,7 +86,7 @@ export default function HomePage() {
             <div className="text-center">
               <BusinessCardPreview data={cardData!} showShareUrl />
               <div className="mt-8 space-x-4">
-                <Button onClick={handleBackToForm} variant="outline">
+                <Button onClick={handleEditCard} variant="outline">
                   Chỉnh sửa
                 </Button>
                 <Button onClick={() => router.push(`/card/${cardData!.id}`)}>Xem card visit</Button>

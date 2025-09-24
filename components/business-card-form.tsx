@@ -14,9 +14,10 @@ interface BusinessCardFormProps {
   onSubmit: (data: BusinessCardData) => void;
   onPreview?: (data: BusinessCardData) => void;
   initialData?: BusinessCardData;
+  isEditMode?: boolean;
 }
 
-export function BusinessCardForm({ onSubmit, onPreview, initialData }: BusinessCardFormProps) {
+export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode }: BusinessCardFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     title: initialData?.title || "",
@@ -64,6 +65,8 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData }: BusinessC
   };
 
   const handlePreview = () => {
+    console.log("Preview data:", formData);
+
     if (onPreview) {
       const cardData: BusinessCardData = {
         id: initialData?.id || generateId(),
@@ -279,11 +282,16 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData }: BusinessC
           </div>
 
           <div className="space-y-2">
-            <Button type="button" variant="outline" className="w-full bg-transparent" onClick={handlePreview}>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-transparent cursor-pointer"
+              onClick={handlePreview}
+            >
               Xem trước
             </Button>
-            <Button type="submit" className="w-full">
-              Tạo Card Visit
+            <Button type="submit" className="w-full cursor-pointer">
+              {isEditMode ? "Cập nhật card visit" : "Tạo card visit"}
             </Button>
           </div>
         </form>

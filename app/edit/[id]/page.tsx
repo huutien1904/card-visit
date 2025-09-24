@@ -1,55 +1,63 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import type { BusinessCardData } from "@/app/page"
-import { BusinessCardForm } from "@/components/business-card-form"
-import { BusinessCardPreview } from "@/components/business-card-preview"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft } from "lucide-react"
-import { Navigation } from "@/components/navigation" // Import Navigation component
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import type { BusinessCardData } from "@/app/page";
+import { BusinessCardForm } from "@/components/business-card-form";
+import { BusinessCardPreview } from "@/components/business-card-preview";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+import { Navigation } from "@/components/navigation";
 
 export default function EditCardPage() {
-  const params = useParams()
-  const router = useRouter()
-  const [cardData, setCardData] = useState<BusinessCardData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  const params = useParams();
+  const router = useRouter();
+  const [cardData, setCardData] = useState<BusinessCardData | null>(null);
+  const [previewData, setPreviewData] = useState<BusinessCardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const loadCard = () => {
       try {
-        const cards = JSON.parse(localStorage.getItem("businessCards") || "[]")
-        const card = cards.find((c: BusinessCardData) => c.id === params.id)
+        const cards = JSON.parse(localStorage.getItem("businessCards") || "[]");
+        const card = cards.find((c: BusinessCardData) => c.id === params.id);
 
         if (card) {
-          setCardData(card)
+          setCardData(card);
+          setPreviewData(card); // Set initial preview data
         } else {
-          setNotFound(true)
+          setNotFound(true);
         }
       } catch (error) {
-        console.error("Error loading card:", error)
-        setNotFound(true)
+        console.error("Error loading card:", error);
+        setNotFound(true);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     if (params.id) {
-      loadCard()
+      loadCard();
     }
-  }, [params.id])
+  }, [params.id]);
 
   const handleFormSubmit = (updatedData: BusinessCardData) => {
-    setCardData(updatedData)
-  }
+    setCardData(updatedData);
+    setPreviewData(updatedData);
+    router.push(`/card/${updatedData.id}`);
+  };
+
+  const handlePreview = (data: BusinessCardData) => {
+    setPreviewData(data);
+  };
 
   const handleSaveAndView = () => {
     if (cardData) {
-      router.push(`/card/${cardData.id}`)
+      router.push(`/card/${cardData.id}`);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -59,7 +67,7 @@ export default function EditCardPage() {
           <p className="text-gray-600 dark:text-gray-400">Đang tải...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (notFound) {
@@ -76,7 +84,7 @@ export default function EditCardPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -106,7 +114,12 @@ export default function EditCardPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8">
             <div>
-              <BusinessCardForm onSubmit={handleFormSubmit} initialData={cardData!} />
+              <BusinessCardForm
+                onSubmit={handleFormSubmit}
+                onPreview={handlePreview}
+                initialData={cardData!}
+                isEditMode
+              />
             </div>
             <div className="lg:sticky lg:top-8">
               <Card>
@@ -114,12 +127,12 @@ export default function EditCardPage() {
                   <CardTitle>Xem trước</CardTitle>
                   <CardDescription>Card visit sau khi chỉnh sửa</CardDescription>
                 </CardHeader>
-                <CardContent>{cardData && <BusinessCardPreview data={cardData} />}</CardContent>
+                <CardContent>{previewData && <BusinessCardPreview data={previewData} />}</CardContent>
               </Card>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
