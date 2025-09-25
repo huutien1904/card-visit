@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import type { BusinessCardData } from "@/app/page";
 import { BusinessCardPreview } from "@/components/business-card-preview";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Share2, Download, Edit } from "lucide-react";
-import { ContactActions } from "@/components/contact-actions";
-import { Navigation } from "@/components/navigation"; // Import Navigation component
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function CardPage() {
   const params = useParams();
@@ -162,7 +158,6 @@ END:VCARD`;
 
           <div className="space-y-8">
             <BusinessCardPreview data={cardData!} />
-            <ContactActions data={cardData!} />
           </div>
         </div>
       </div>

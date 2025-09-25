@@ -4,6 +4,7 @@ import type React from "react";
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { generateQRCode } from "@/lib/qr-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,13 +191,17 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
 
     setIsSubmitting(true);
 
-    const cardData: BusinessCardData = {
-      id: initialData?.id || generateId(),
-      ...formData,
-      createdAt: initialData?.createdAt || new Date().toISOString(),
-    };
-
     try {
+      const cardData: BusinessCardData = {
+        id: initialData?.id || generateId(),
+        ...formData,
+        createdAt: initialData?.createdAt || new Date().toISOString(),
+      };
+
+      // Generate QR code for the card
+      const qrCode = await generateQRCode(cardData);
+      cardData.qrCode = qrCode;
+
       const existingCards = JSON.parse(localStorage.getItem("businessCards") || "[]");
       const updatedCards = existingCards.filter((card: BusinessCardData) => card.id !== cardData.id);
       updatedCards.push(cardData);

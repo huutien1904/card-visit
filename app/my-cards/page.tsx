@@ -6,7 +6,7 @@ import type { BusinessCardData } from "@/app/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, Edit, Trash2, Share2 } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Share2, QrCode } from "lucide-react";
 import { Navigation } from "@/components/navigation";
 
 export default function MyCardsPage() {
@@ -157,6 +157,12 @@ export default function MyCardsPage() {
                       <Badge variant="secondary" className="text-xs">
                         Tạo: {new Date(card.createdAt).toLocaleDateString("vi-VN")}
                       </Badge>
+                      {card.qrCode && (
+                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                          <QrCode className="w-3 h-3" />
+                          QR Code
+                        </Badge>
+                      )}
                     </div>
                   </div>
 

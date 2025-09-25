@@ -24,6 +24,7 @@ export interface BusinessCardData {
   textColor: string;
   createdAt: string;
   image?: string;
+  qrCode?: string;
 }
 
 export default function HomePage() {

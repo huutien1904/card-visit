@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -121,5 +122,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-inter), 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 }
