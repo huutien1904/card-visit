@@ -2,21 +2,30 @@ import type { BusinessCardData } from "@/app/page";
 import QRCode from "qrcode";
 
 export function generateVCard(data: BusinessCardData): string {
-  const vCard = `BEGIN:VCARD
-VERSION:3.0
-FN:${data.name}
-ORG:${data.company}
-TITLE:${data.title}
-EMAIL:${data.email}
-${data.phone ? `TEL:${data.phone}` : ""}
-${data.website ? `URL:${data.website}` : ""}
-${data.address ? `ADR:;;${data.address};;;;` : ""}
-${data.bio ? `NOTE:${data.bio}` : ""}
-${data.linkedin ? `URL;type=LinkedIn:${data.linkedin}` : ""}
-${data.twitter ? `URL;type=Twitter:${data.twitter}` : ""}
-END:VCARD`
-    .replace(/\n\n/g, "\n")
-    .trim();
+  // Tách họ và tên để có format đúng
+  const nameParts = data.name.trim().split(" ");
+  const lastName = nameParts[nameParts.length - 1] || "";
+  const firstName = nameParts.slice(0, -1).join(" ") || "";
+
+  const vCardLines = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `FN:${data.name}`, // Full Name - tên đầy đủ
+    `N:${lastName};${firstName};;;`, // Name - họ;tên
+    data.company ? `ORG:${data.name}` : "",
+    data.title ? `TITLE:${data.title}` : "",
+    data.email ? `EMAIL:${data.email}` : "",
+    data.phone ? `TEL:${data.phone}` : "",
+    data.website ? `URL:${data.website}` : "",
+    data.address ? `ADR:;;${data.address};;;;` : "",
+    data.bio ? `NOTE:${data.bio}` : "",
+    data.linkedin ? `URL;type=LinkedIn:${data.linkedin}` : "",
+    data.twitter ? `URL;type=Twitter:${data.twitter}` : "",
+    "END:VCARD",
+  ];
+
+  // Lọc bỏ các dòng trống và join lại
+  const vCard = vCardLines.filter((line) => line.trim() !== "").join("\n");
 
   return vCard;
 }

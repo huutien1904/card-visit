@@ -53,30 +53,36 @@ export default function HomePage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Tạo Card Visit Kỹ Thuật Số</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Tạo Card Visit Kỹ Thuật Số
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto px-4">
             Tạo card visit chuyên nghiệp và chia sẻ thông tin liên hệ của bạn một cách dễ dàng
           </p>
         </div>
 
         <div className="max-w-6xl mx-auto">
           {!isPreviewMode ? (
-            <div className="grid lg:grid-cols-2 gap-8">
-              <div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              <div className="order-2 lg:order-1">
                 <BusinessCardForm onSubmit={handleFormSubmit} onPreview={handlePreview} />
               </div>
-              <div className="lg:sticky lg:top-8">
+              <div className="order-1 lg:order-2 lg:sticky lg:top-8">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Xem trước</CardTitle>
-                    <CardDescription>Nhấn nút "Xem trước" để xem card visit của bạn</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">Xem trước</CardTitle>
+                    <CardDescription className="text-sm sm:text-base">
+                      Nhấn nút "Xem trước" để xem card visit của bạn
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {previewData ? (
                       <BusinessCardPreview data={previewData} />
                     ) : (
-                      <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                        <p className="text-gray-500 dark:text-gray-400">Nhấn "Xem trước" để hiển thị card visit</p>
+                      <div className="h-48 sm:h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                        <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base text-center px-4">
+                          Nhấn "Xem trước" để hiển thị card visit
+                        </p>
                       </div>
                     )}
                   </CardContent>

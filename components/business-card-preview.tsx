@@ -30,17 +30,29 @@ export function BusinessCardPreview({ data, showShareUrl }: BusinessCardPreviewP
 
   const generateQRCode = async () => {
     try {
-      const vCard = `BEGIN:VCARD
-VERSION:3.0
-FN:${data.name}
-ORG:${data.company}
-TITLE:${data.title}
-TEL:${data.phone}
-EMAIL:${data.email}
-URL:${data.website}
-ADR:;;${data.address};;;;
-NOTE:${data.bio}
-END:VCARD`;
+      // Tách họ và tên để có format đúng
+      const nameParts = data.name.trim().split(" ");
+      const lastName = nameParts[nameParts.length - 1] || "";
+      const firstName = nameParts.slice(0, -1).join(" ") || "";
+
+      // Tạo vCard với format chuẩn cho QR code
+      const vCardLines = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        `FN:${data.name}`, // Full Name - tên đầy đủ
+        `N:${lastName};${firstName};;;`, // Name - họ;tên;tên đệm;tiền tố;hậu tố
+        data.company ? `ORG:${data.company}` : "",
+        data.title ? `TITLE:${data.title}` : "",
+        data.phone ? `TEL:${data.phone}` : "",
+        data.email ? `EMAIL:${data.email}` : "",
+        data.website ? `URL:${data.website}` : "",
+        data.address ? `ADR:;;${data.address};;;;` : "",
+        data.bio ? `NOTE:${data.bio}` : "",
+        "END:VCARD",
+      ];
+
+      // Lọc bỏ các dòng trống và join lại
+      const vCard = vCardLines.filter((line) => line.trim() !== "").join("\n");
 
       const qrDataUrl = await QRCode.toDataURL(vCard, {
         width: 256,
@@ -49,6 +61,7 @@ END:VCARD`;
           dark: "#000000",
           light: "#FFFFFF",
         },
+        errorCorrectionLevel: 'M', // Medium error correction cho vCard
       });
       setQrCodeUrl(qrDataUrl);
     } catch (error) {
@@ -92,30 +105,78 @@ END:VCARD`;
     }
   };
 
-  const saveToContacts = () => {
-    // Create vCard format
-    const vCard = `BEGIN:VCARD
-VERSION:3.0
-FN:${data.name}
-ORG:${data.company}
-TITLE:${data.title}
-TEL:${data.phone}
-EMAIL:${data.email}
-URL:${data.website}
-ADR:;;${data.address};;;;
-NOTE:${data.bio}
-END:VCARD`;
+  const saveToContacts = async () => {
+    // Tách họ và tên để có format đúng
+    const nameParts = data.name.trim().split(" ");
+    const lastName = nameParts[nameParts.length - 1] || "";
+    const firstName = nameParts.slice(0, -1).join(" ") || "";
 
-    // Create blob and download
-    const blob = new Blob([vCard], { type: "text/vcard" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${data.name}.vcf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    // Create vCard format với N field đúng
+    const vCardLines = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `FN:${data.name}`, // Full Name - tên đầy đủ
+      `N:${lastName};${firstName};;;`, // Name - họ;tên;tên đệm;tiền tố;hậu tố
+      data.company ? `ORG:${data.company}` : "",
+      data.title ? `TITLE:${data.title}` : "",
+      data.phone ? `TEL:${data.phone}` : "",
+      data.email ? `EMAIL:${data.email}` : "",
+      data.website ? `URL:${data.website}` : "",
+      data.address ? `ADR:;;${data.address};;;;` : "",
+      data.bio ? `NOTE:${data.bio}` : "",
+      "END:VCARD",
+    ];
+
+    // Lọc bỏ các dòng trống và join lại
+    const vCard = vCardLines.filter((line) => line.trim() !== "").join("\n");
+
+    // Kiểm tra xem có phải là mobile không
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // Trên mobile: tạo data URL và mở trong tab mới
+      const dataUrl = `data:text/vcard;charset=utf-8,${encodeURIComponent(vCard)}`;
+      
+      // Thử dùng Web Share API trước nếu có
+      if (navigator.share) {
+        try {
+          const blob = new Blob([vCard], { type: "text/vcard" });
+          const file = new File([blob], `${data.name}.vcf`, { type: "text/vcard" });
+          
+          await navigator.share({
+            title: `Thêm ${data.name} vào danh bạ`,
+            text: `Lưu thông tin liên hệ của ${data.name}`,
+            files: [file]
+          });
+          return;
+        } catch (err) {
+          console.log("Web Share API không hỗ trợ file, fallback to download");
+        }
+      }
+      
+      // Fallback: tạo link download
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `${data.name}.vcf`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Hiển thị hướng dẫn cho user
+      alert(`Đã tải file ${data.name}.vcf. Vui lòng mở file để thêm vào danh bạ.`);
+    } else {
+      // Trên desktop: download file như bình thường
+      const blob = new Blob([vCard], { type: "text/vcard" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${data.name}.vcf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }
   };
 
   const downloadQRCode = () => {
@@ -161,14 +222,14 @@ END:VCARD`;
         <div className="flex gap-3 mb-6">
           <Button
             onClick={saveToContacts}
-            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2"
+            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-200 active:scale-95"
           >
-            <Download className="w-4 h-4" />
+            <UserPlus className="w-4 h-4" />
             LƯU DANH BẠ
           </Button>
           <Button
             onClick={() => setShowQR(true)}
-            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2"
+            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-200 active:scale-95"
           >
             <QrCode className="w-4 h-4" />
             QUÉT MÃ QR
@@ -285,23 +346,39 @@ END:VCARD`;
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
-            <DialogTitle className="text-center">Mã QR Danh Bạ</DialogTitle>
+            <DialogTitle className="text-center text-lg font-bold">Mã QR Danh Bạ</DialogTitle>
           </DialogHeader>
-          <div className="text-center space-y-4">
-            <div className="bg-white p-4 rounded-lg border mx-auto w-fit">
+          <div className="text-center space-y-6">
+            {/* QR Code với border đẹp */}
+            <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-sm mx-auto w-fit">
               {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code để lưu danh bạ" className="w-48 h-48 mx-auto" />}
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">
-                Quét mã QR này bằng camera điện thoại để tự động lưu thông tin liên hệ của <strong>{data.name}</strong>{" "}
-                vào danh bạ
-              </p>
+            {/* Thông tin contact */}
+            <div className="bg-orange-50 p-4 rounded-xl">
+              <div className="text-sm font-medium text-orange-800 mb-1">{data.name}</div>
+              <div className="text-xs text-orange-600">{data.phone}</div>
+            </div>
 
-              <Button onClick={downloadQRCode} variant="outline" size="sm" className="w-full">
-                <Download className="w-4 h-4 mr-2" />
-                Tải xuống QR Code
-              </Button>
+            {/* Hướng dẫn */}
+            <div className="space-y-3">
+              <div className="text-sm text-gray-700 leading-relaxed">
+                📱 <strong>Cách sử dụng:</strong><br />
+                1. Mở ứng dụng <strong>Camera</strong> trên điện thoại<br />
+                2. Hướng camera vào mã QR<br />
+                3. Chạm vào thông báo hiện lên<br />
+                4. Chọn <strong>"Thêm vào danh bạ"</strong>
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={downloadQRCode} variant="outline" size="sm" className="flex-1">
+                  <Download className="w-4 h-4 mr-2" />
+                  Tải QR Code
+                </Button>
+                <Button onClick={() => setShowQR(false)} size="sm" className="flex-1">
+                  Đóng
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
