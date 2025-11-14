@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // get card by id
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -28,7 +30,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Validation for required fields (but allow partial updates)
     const requiredFields = ["name", "title", "phone1", "email1", "address", "avatar", "imageCover"];
     for (const field of requiredFields) {
-      if (body[field] !== undefined && !body[field]) {
+      if (body[field] !== undefined && (!body[field] || body[field].toString().trim() === "")) {
         return NextResponse.json({ error: `Field ${field} cannot be empty` }, { status: 400 });
       }
     }

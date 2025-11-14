@@ -1,6 +1,8 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { createSlug, generateUniqueSlug } from "@/lib/slug-utils";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // get list card
 export async function GET() {

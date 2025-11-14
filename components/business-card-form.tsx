@@ -150,7 +150,9 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
     setFormData({ ...formData, [field]: value });
 
     if (errors[field as keyof FormErrors]) {
-      setErrors({ ...errors, [field]: undefined });
+      const newErrors = { ...errors };
+      delete newErrors[field as keyof FormErrors];
+      setErrors(newErrors);
     }
   };
 
@@ -179,6 +181,12 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
         setFormData({ ...formData, [type]: imageUrl });
+
+        if (errors.avatar) {
+          const newErrors = { ...errors };
+          delete newErrors.avatar;
+          setErrors(newErrors);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -207,8 +215,11 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
     reader.onload = (event) => {
       const imageUrl = event.target?.result as string;
       setFormData({ ...formData, imageCover: imageUrl });
+
       if (errors.imageCover) {
-        setErrors({ ...errors, imageCover: undefined });
+        const newErrors = { ...errors };
+        delete newErrors.imageCover;
+        setErrors(newErrors);
       }
     };
     reader.readAsDataURL(file);
