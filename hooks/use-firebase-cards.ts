@@ -67,16 +67,27 @@ export function useFirebaseCards() {
     [fetchCards]
   );
 
-  const getCard = useCallback(async (id: string): Promise<BusinessCard> => {
+  const getCard = useCallback(async (identifier: string): Promise<BusinessCard> => {
     try {
-      const response = await fetch(`/api/cards/${id}`);
-      const data = await response.json();
+      if (!identifier.match(/^[a-f\d]{24}$/i)) {
+        const response = await fetch(`/api/cards/slug/${identifier}`);
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch card");
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch card");
+        }
+
+        return data.card;
       }
 
-      return data.card;
+      const allCards = await fetch("/api/cards").then((res) => res.json());
+      const card = allCards.cards?.find((c: BusinessCard) => c.id === identifier);
+
+      if (!card) {
+        throw new Error("Card not found");
+      }
+
+      return card;
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : "Failed to fetch card");
     }
@@ -98,9 +109,20 @@ export function useFirebaseCards() {
   }, []);
 
   const updateCard = useCallback(
-    async (id: string, cardData: Partial<BusinessCard>) => {
+    async (identifier: string, cardData: Partial<BusinessCard>) => {
       try {
-        const response = await fetch(`/api/cards/${id}`, {
+        let slug = identifier;
+
+        if (identifier.match(/^[a-f\d]{24}$/i)) {
+          const allCards = await fetch("/api/cards").then((res) => res.json());
+          const card = allCards.cards?.find((c: BusinessCard) => c.id === identifier);
+          if (!card) {
+            throw new Error("Card not found");
+          }
+          slug = card.slug;
+        }
+
+        const response = await fetch(`/api/cards/slug/${slug}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -124,9 +146,21 @@ export function useFirebaseCards() {
   );
 
   const deleteCard = useCallback(
-    async (id: string) => {
+    async (identifier: string) => {
       try {
-        const response = await fetch(`/api/cards/${id}`, {
+        let slug = identifier;
+
+        // If identifier looks like an ID, find the card first to get its slug
+        if (identifier.match(/^[a-f\d]{24}$/i)) {
+          const allCards = await fetch("/api/cards").then((res) => res.json());
+          const card = allCards.cards?.find((c: BusinessCard) => c.id === identifier);
+          if (!card) {
+            throw new Error("Card not found");
+          }
+          slug = card.slug;
+        }
+
+        const response = await fetch(`/api/cards/slug/${slug}`, {
           method: "DELETE",
         });
 
@@ -168,25 +202,45 @@ export function useFirebaseCard(id: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  const fetchCard = useCallback(async (cardId: string) => {
+  const fetchCard = useCallback(async (cardIdentifier: string) => {
     try {
       setLoading(true);
       setError(null);
       setNotFound(false);
 
-      const response = await fetch(`/api/cards/${cardId}`);
-      const data = await response.json();
+      // If it looks like a slug, use slug endpoint directly
+      if (!cardIdentifier.match(/^[a-f\d]{24}$/i)) {
+        const response = await fetch(`/api/cards/slug/${cardIdentifier}`);
+        const data = await response.json();
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          setNotFound(true);
-        } else {
-          throw new Error(data.error || "Failed to fetch card");
+        if (!response.ok) {
+          if (response.status === 404) {
+            setNotFound(true);
+          } else {
+            throw new Error(data.error || "Failed to fetch card");
+          }
+          return;
         }
+
+        setCard(data.card);
         return;
       }
 
-      setCard(data.card);
+      // If it looks like an ID, search through all cards
+      const response = await fetch("/api/cards");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch cards");
+      }
+
+      const foundCard = data.cards?.find((c: BusinessCard) => c.id === cardIdentifier);
+      if (!foundCard) {
+        setNotFound(true);
+        return;
+      }
+
+      setCard(foundCard);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch card");
     } finally {
