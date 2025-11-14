@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap');
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.cdnfonts.com/css/svn-gilroy");
+@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --primary-blue: #1164ac;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -122,6 +123,19 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-inter), 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: "SVN-Gilroy", var(--font-inter), "Inter", "Segoe UI", "Roboto", -apple-system, BlinkMacSystemFont,
+      sans-serif;
   }
+}
+
+.text-primary-blue {
+  color: var(--primary-blue) !important;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }

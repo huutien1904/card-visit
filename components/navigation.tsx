@@ -1,39 +1,37 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Home, List, Menu, X } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { CreditCard } from "lucide-react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Home, List, Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CreditCard } from "lucide-react";
 
 export function Navigation() {
-  const pathname = usePathname()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Close menu when route changes
   useEffect(() => {
-    setIsMobileMenuOpen(false)
-  }, [pathname])
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const nav = document.getElementById('mobile-nav')
+      const nav = document.getElementById("mobile-nav");
       if (nav && !nav.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false)
+        setIsMobileMenuOpen(false);
       }
-    }
+    };
 
     if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isMobileMenuOpen])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   const navItems = [
     {
@@ -44,25 +42,28 @@ export function Navigation() {
     },
     {
       href: "/my-cards",
-      label: "Card visits của tôi",
+      label: "Danh sách Card",
       icon: List,
       description: "Xem tất cả card visits",
     },
-  ]
+  ];
 
   return (
-    <nav id="mobile-nav" className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 relative z-50">
+    <nav
+      id="mobile-nav"
+      className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 relative z-50"
+    >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
             <CreditCard className="w-6 h-6 text-blue-600" />
-            <span className="text-gray-900 dark:text-white">Digital Cards</span>
+            <span className="text-gray-900 dark:text-white">VNSKY Cards</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
 
               return (
                 <Link key={item.href} href={item.href}>
@@ -74,27 +75,18 @@ export function Navigation() {
                     {item.label}
                   </Button>
                 </Link>
-              )
+              );
             })}
           </div>
 
           <div className="md:hidden">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
+            <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        <div 
+        <div
           className={cn(
             "md:hidden border-t border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 ease-in-out",
             isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
@@ -102,15 +94,11 @@ export function Navigation() {
         >
           <div className="px-4 py-2 space-y-1">
             {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
 
               return (
-                <Link 
-                  key={item.href} 
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
+                <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
                   <Button
                     variant={isActive ? "default" : "ghost"}
                     className={cn(
@@ -125,11 +113,11 @@ export function Navigation() {
                     </div>
                   </Button>
                 </Link>
-              )
+              );
             })}
           </div>
         </div>
       </div>
     </nav>
-  )
+  );
 }

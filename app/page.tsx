@@ -10,20 +10,17 @@ import { Navigation } from "@/components/navigation";
 
 export interface BusinessCardData {
   id: string;
+  slug: string;
   name: string;
   title: string;
-  company: string;
-  email: string;
-  phone: string;
-  website: string;
+  phone1: string;
+  phone2?: string;
+  email1: string;
+  email2?: string;
   address: string;
-  bio: string;
-  linkedin: string;
-  twitter: string;
-  backgroundColor: string;
-  textColor: string;
+  avatar: string;
+  imageCover: string;
   createdAt: string;
-  image?: string;
   qrCode?: string;
 }
 
@@ -43,7 +40,6 @@ export default function HomePage() {
   };
 
   const handleEditCard = () => {
-    // setIsPreviewMode(false);
     router.push(`/edit/${cardData!.id}`);
   };
 
@@ -68,7 +64,7 @@ export default function HomePage() {
                 <BusinessCardForm onSubmit={handleFormSubmit} onPreview={handlePreview} />
               </div>
               <div className="order-1 lg:order-2 lg:sticky lg:top-8">
-                <Card>
+                <Card className="pt-4">
                   <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">Xem trước</CardTitle>
                     <CardDescription className="text-sm sm:text-base">
@@ -91,7 +87,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="text-center">
-              <BusinessCardPreview data={cardData!} showShareUrl />
+              <BusinessCardPreview data={cardData!} />
               <div className="mt-8 space-x-4">
                 <Button onClick={handleEditCard} variant="outline">
                   Chỉnh sửa

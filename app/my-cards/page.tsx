@@ -1,49 +1,118 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { BusinessCardData } from "@/app/page";
+import { ErrorDisplay } from "@/components/error-display";
+import { Navigation } from "@/components/navigation";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, Edit, Trash2, Share2, QrCode } from "lucide-react";
-import { Navigation } from "@/components/navigation";
+import { Input } from "@/components/ui/input";
+import { useFirebaseCards } from "@/hooks/use-firebase-cards";
+import { useToast } from "@/hooks/use-toast";
+import { Edit, Eye, Plus, QrCode, Search, Share2, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function MyCardsPage() {
   const router = useRouter();
-  const [cards, setCards] = useState<BusinessCardData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { cards, loading, error, deleteCard } = useFirebaseCards();
+  const { toast } = useToast();
+  const [firebaseCards, setFirebaseCards] = useState<BusinessCardData[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredCards, setFilteredCards] = useState<BusinessCardData[]>([]);
 
   useEffect(() => {
-    loadCards();
-  }, []);
+    const convertCards = async () => {
+      const convertedCards = await Promise.all(
+        cards.map(async (card) => {
+          const cardData: BusinessCardData = {
+            id: card.id,
+            slug: card.slug,
+            name: card.name,
+            title: card.title,
+            phone1: card.phone1,
+            phone2: card.phone2 || "",
+            email1: card.email1,
+            email2: card.email2 || "",
+            address: card.address,
+            avatar: card.avatar,
+            imageCover: card.imageCover,
+            createdAt: card.createdAt,
+          };
 
-  const loadCards = () => {
-    try {
-      const savedCards = JSON.parse(localStorage.getItem("businessCards") || "[]");
-      setCards(
-        savedCards.sort(
-          (a: BusinessCardData, b: BusinessCardData) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
+          return cardData;
+        })
       );
-    } catch (error) {
-      console.error("Error loading cards:", error);
-    } finally {
-      setLoading(false);
+      setFirebaseCards(convertedCards);
+      setFilteredCards(convertedCards);
+    };
+
+    if (cards.length > 0) {
+      convertCards();
     }
+  }, [cards]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredCards(firebaseCards);
+    } else {
+      const filtered = firebaseCards.filter(
+        (card) =>
+          card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          card.email1.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (card.email2 && card.email2.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          card.phone1.includes(searchQuery) ||
+          (card.phone2 && card.phone2.includes(searchQuery)) ||
+          card.address.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredCards(filtered);
+    }
+  }, [searchQuery, firebaseCards]);
+
+  const clearSearch = () => {
+    setSearchQuery("");
   };
 
-  const handleDeleteCard = (cardId: string) => {
+  const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
+    if (!highlight.trim()) {
+      return <span>{text}</span>;
+    }
+
+    const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+    const parts = text.split(regex);
+
+    return (
+      <span>
+        {parts.map((part, index) =>
+          regex.test(part) ? (
+            <mark key={index} className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    );
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
     if (confirm("Bạn có chắc chắn muốn xóa card visit này?")) {
-      const updatedCards = cards.filter((card) => card.id !== cardId);
-      localStorage.setItem("businessCards", JSON.stringify(updatedCards));
-      setCards(updatedCards);
+      try {
+        await deleteCard(cardId);
+      } catch (error) {
+        toast({
+          title: "Có lỗi xảy ra",
+          description: `Lỗi khi xóa card: ${error instanceof Error ? error.message : "Unknown error"}`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleShareCard = async (card: BusinessCardData) => {
-    const url = `${window.location.origin}/card/${card.id}`;
+    const url = `${window.location.origin}/${card.slug}`;
 
     if (navigator.share) {
       try {
@@ -63,7 +132,10 @@ export default function MyCardsPage() {
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      alert("Đã sao chép link!");
+      toast({
+        title: "Thành công!",
+        description: "Đã sao chép link!",
+      });
     } catch (error) {
       console.error("Failed to copy:", error);
     }
@@ -83,26 +155,79 @@ export default function MyCardsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <>
+        <Navigation />
+        <ErrorDisplay
+          message={`Lỗi tải danh sách card: ${error}`}
+          onRetry={() => window.location.reload()}
+          onGoHome={() => router.push("/")}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <Navigation />
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Card Visits của tôi</h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Quản lý tất cả card visits bạn đã tạo ({cards.length} card visits)
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-8 gap-6">
+          {/* Phần Tiêu đề và Mô tả */}
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Quản lý danh sách card visit</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Quản lý tất cả card visits bạn đã tạo ({firebaseCards.length} card visits)
+              {searchQuery && (
+                <span className="block mt-1">
+                  Kết quả tìm kiếm: {filteredCards.length} card visits cho "{searchQuery}"
+                </span>
+              )}
             </p>
+
+            {/* Search Box */}
+            <div className="relative max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+                autoComplete="off"
+              />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 rounded-r-md transition-colors"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                </button>
+              )}
+            </div>
+
+            {searchQuery && (
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                {filteredCards.length > 0 ? (
+                  <span className="text-green-600 dark:text-green-400">✓ Tìm thấy {filteredCards.length} kết quả</span>
+                ) : (
+                  <span className="text-amber-600 dark:text-amber-400">⚠ Không có kết quả phù hợp</span>
+                )}
+              </div>
+            )}
           </div>
 
-          <Button onClick={() => router.push("/")} className="flex items-center gap-2">
+          <Button onClick={() => router.push("/")} className="flex items-center gap-2 shrink-0">
             <Plus className="w-4 h-4" />
             Tạo card visit mới
           </Button>
         </div>
 
-        {cards.length === 0 ? (
+        {firebaseCards.length === 0 ? (
           <Card className="max-w-md mx-auto">
             <CardContent className="p-8 text-center">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -116,44 +241,77 @@ export default function MyCardsPage() {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredCards.length === 0 ? (
+          <Card className="max-w-md mx-auto">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Không tìm thấy kết quả</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Không có card visit nào khớp với từ khóa "{searchQuery}"
+              </p>
+              <Button onClick={clearSearch} variant="outline">
+                <X className="w-4 h-4 mr-2" />
+                Xóa bộ lọc
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cards.map((card) => (
-              <Card key={card.id} className="hover:shadow-lg transition-shadow">
+            {filteredCards.map((card) => (
+              <Card key={card.id} className="hover:shadow-lg transition-shadow h-full flex flex-col">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between pt-4">
                     <div className="flex-1">
-                      <CardTitle className="text-lg mb-1">{card.name}</CardTitle>
+                      <CardTitle className="text-lg mb-1">
+                        <HighlightedText text={card.name} highlight={searchQuery} />
+                      </CardTitle>
                       <CardDescription className="text-sm">
-                        {card.title} tại {card.company}
+                        <HighlightedText text={card.title} highlight={searchQuery} />
                       </CardDescription>
                     </div>
-                    {card.image ? (
+                    {card.avatar ? (
                       <img
-                        src={card.image}
+                        src={card.avatar}
                         alt={card.name}
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0 border"
-                        style={{ borderColor: card.textColor }}
+                        className="w-10 h-10 rounded-full object-cover shrink-0 border"
                       />
                     ) : (
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                        style={{
-                          backgroundColor: card.textColor,
-                          color: card.backgroundColor,
-                        }}
-                      >
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 bg-blue-100 text-blue-600">
                         {card.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
                 </CardHeader>
 
-                <CardContent>
-                  <div className="space-y-2 mb-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">📧 {card.email}</p>
-                    {card.phone && <p className="text-sm text-gray-600 dark:text-gray-400">📞 {card.phone}</p>}
-                    <div className="flex items-center gap-2">
+                <CardContent className="flex-1 flex flex-col">
+                  {/* Content area that grows */}
+                  <div className="flex-1 space-y-2 mb-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                        📧 <HighlightedText text={card.email1} highlight={searchQuery} />
+                      </p>
+                      {card.phone1 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          📞 <HighlightedText text={card.phone1} highlight={searchQuery} />
+                        </p>
+                      )}
+                      {card.phone2 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          📞 <HighlightedText text={card.phone2} highlight={searchQuery} />
+                        </p>
+                      )}
+                      {card.email2 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                          📧 <HighlightedText text={card.email2} highlight={searchQuery} />
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                        📍 <HighlightedText text={card.address} highlight={searchQuery} />
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary" className="text-xs">
                         Tạo: {new Date(card.createdAt).toLocaleDateString("vi-VN")}
                       </Badge>
@@ -166,42 +324,50 @@ export default function MyCardsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  {/* Button area always at bottom */}
+                  <div className="grid grid-cols-4 gap-2 mt-auto">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => router.push(`/card/${card.id}`)}
-                      className="flex-1 cursor-pointer flex items-center justify-center"
+                      onClick={() => router.push(`/${card.slug}`)}
+                      className="col-span-2 cursor-pointer flex items-center justify-center"
+                      title="Xem chi tiết"
                     >
                       <Eye className="w-3 h-3 mr-1" />
-                      Xem
+                      <span className="hidden sm:inline">Xem</span>
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
-                      className="cursor-pointer"
-                      onClick={() => router.push(`/edit/${card.id}`)}
+                      className="cursor-pointer flex items-center justify-center"
+                      onClick={() => router.push(`/edit/${card.slug}`)}
+                      title="Chỉnh sửa"
                     >
-                      <Edit className="w-3 h-3 " />
+                      <Edit className="w-3 h-3" />
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
-                      className="cursor-pointer"
+                      className="cursor-pointer flex items-center justify-center"
                       onClick={() => handleShareCard(card)}
+                      title="Chia sẻ"
                     >
                       <Share2 className="w-3 h-3" />
                     </Button>
+                  </div>
 
+                  <div className="mt-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDeleteCard(card.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer flex items-center justify-center"
+                      title="Xóa card"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      <span className="text-xs">Xóa</span>
                     </Button>
                   </div>
                 </CardContent>

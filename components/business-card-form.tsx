@@ -2,13 +2,18 @@
 
 import type React from "react";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { generateQRCode } from "@/lib/qr-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useFirebaseCards, BusinessCard } from "@/hooks/use-firebase-cards";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { createSlug } from "@/lib/slug-utils";
+import { CoverImageSelector } from "@/components/cover-image-selector";
+import { COVER_IMAGES } from "@/lib/cover-images";
 import type { BusinessCardData } from "@/app/page";
 
 interface BusinessCardFormProps {
@@ -21,65 +26,69 @@ interface BusinessCardFormProps {
 interface FormErrors {
   name?: string;
   title?: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-  website?: string;
-  linkedin?: string;
-  twitter?: string;
+  phone1?: string;
+  phone2?: string;
+  email1?: string;
+  email2?: string;
+  address?: string;
+  avatar?: string;
+  imageCover?: string;
 }
 
 export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode }: BusinessCardFormProps) {
+  const { createCard, updateCard } = useFirebaseCards();
+  const router = useRouter();
+  const { toast } = useToast();
+
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     title: initialData?.title || "",
-    company: initialData?.company || "",
-    email: initialData?.email || "",
-    phone: initialData?.phone || "",
-    website: initialData?.website || "",
+    phone1: initialData?.phone1 || "",
+    phone2: initialData?.phone2 || "",
+    email1: initialData?.email1 || "",
+    email2: initialData?.email2 || "",
     address: initialData?.address || "",
-    bio: initialData?.bio || "",
-    linkedin: initialData?.linkedin || "",
-    twitter: initialData?.twitter || "",
-    backgroundColor: initialData?.backgroundColor || "#ffffff",
-    textColor: initialData?.textColor || "#000000",
-    image: initialData?.image || "",
+    avatar: initialData?.avatar || "",
+    imageCover: initialData?.imageCover || COVER_IMAGES[0].path, // Default to first cover image
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        title: initialData.title || "",
+        phone1: initialData.phone1 || "",
+        phone2: initialData.phone2 || "",
+        email1: initialData.email1 || "",
+        email2: initialData.email2 || "",
+        address: initialData.address || "",
+        avatar: initialData.avatar || "",
+        imageCover: initialData.imageCover || COVER_IMAGES[0].path,
+      });
+    }
+  }, [initialData]);
 
   const generateId = () => {
     return Math.random().toString(36).substr(2, 9);
   };
 
-  // Validation functions
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   const validatePhone = (phone: string): boolean => {
-    if (!phone) return true; // Phone is optional
+    if (!phone) return true;
     const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/;
     return phoneRegex.test(phone.replace(/\s/g, ""));
   };
 
-  const validateUrl = (url: string): boolean => {
-    if (!url) return true; // URL is optional
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-
-    // Required fields
     if (!formData.name.trim()) {
       newErrors.name = "Họ và tên là bắt buộc";
     } else if (formData.name.trim().length < 2) {
@@ -92,33 +101,45 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
       newErrors.title = "Chức vụ phải có ít nhất 2 ký tự";
     }
 
-    if (!formData.company.trim()) {
-      newErrors.company = "Tên công ty là bắt buộc";
-    } else if (formData.company.trim().length < 2) {
-      newErrors.company = "Tên công ty phải có ít nhất 2 ký tự";
+    if (!formData.phone1.trim()) {
+      newErrors.phone1 = "Số điện thoại 1 là bắt buộc";
+    } else if (!validatePhone(formData.phone1)) {
+      newErrors.phone1 = "Số điện thoại 1 không hợp lệ";
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email là bắt buộc";
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = "Email không hợp lệ";
+    if (!formData.email1.trim()) {
+      newErrors.email1 = "Email 1 là bắt buộc";
+    } else if (!validateEmail(formData.email1)) {
+      newErrors.email1 = "Email 1 không hợp lệ";
     }
 
-    // Optional fields validation
-    if (formData.phone && !validatePhone(formData.phone)) {
-      newErrors.phone = "Số điện thoại không hợp lệ";
+    if (!formData.address.trim()) {
+      newErrors.address = "Địa chỉ là bắt buộc";
+    } else if (formData.address.trim().length < 5) {
+      newErrors.address = "Địa chỉ phải có ít nhất 5 ký tự";
     }
 
-    if (formData.website && !validateUrl(formData.website)) {
-      newErrors.website = "URL website không hợp lệ";
+    if (!formData.avatar.trim()) {
+      newErrors.avatar = "Ảnh đại diện là bắt buộc";
     }
 
-    if (formData.linkedin && !validateUrl(formData.linkedin)) {
-      newErrors.linkedin = "URL LinkedIn không hợp lệ";
+    if (!formData.imageCover.trim()) {
+      newErrors.imageCover = "Ảnh nền là bắt buộc";
+    } else {
+      const isPresetCover = COVER_IMAGES.some((cover) => cover.path === formData.imageCover);
+      const isCustomUpload = formData.imageCover.startsWith("data:image/");
+
+      if (!isPresetCover && !isCustomUpload) {
+        newErrors.imageCover = "Vui lòng chọn ảnh nền từ danh sách hoặc upload ảnh riêng";
+      }
     }
 
-    if (formData.twitter && !validateUrl(formData.twitter)) {
-      newErrors.twitter = "URL Twitter không hợp lệ";
+    if (formData.phone2 && !validatePhone(formData.phone2)) {
+      newErrors.phone2 = "Số điện thoại 2 không hợp lệ";
+    }
+
+    if (formData.email2 && !validateEmail(formData.email2)) {
+      newErrors.email2 = "Email 2 không hợp lệ";
     }
 
     setErrors(newErrors);
@@ -128,62 +149,88 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
   const handleInputChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
 
-    // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors({ ...errors, [field]: undefined });
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: "avatar") => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("Kích thước file quá lớn. Vui lòng chọn file nhỏ hơn 5MB.");
+        toast({
+          title: "Lỗi kích thước file",
+          description: "Kích thước file quá lớn. Vui lòng chọn file nhỏ hơn 5MB.",
+          variant: "destructive",
+        });
         return;
       }
 
-      // Validate file type
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
-      if (!allowedTypes.includes(file.type)) {
-        alert("Định dạng file không được hỗ trợ. Vui lòng chọn file JPG, PNG hoặc GIF.");
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Lỗi định dạng file",
+          description: "Vui lòng chọn file hình ảnh.",
+          variant: "destructive",
+        });
         return;
       }
 
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        handleInputChange("image", result);
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setFormData({ ...formData, [type]: imageUrl });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveImage = () => {
-    handleInputChange("image", "");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-      fileInputRef.current.files = null;
+  const handleCustomCoverUpload = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Lỗi kích thước file",
+        description: "Kích thước file quá lớn. Vui lòng chọn file nhỏ hơn 5MB.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Lỗi định dạng file",
+        description: "Vui lòng chọn file hình ảnh.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageUrl = event.target?.result as string;
+      setFormData({ ...formData, imageCover: imageUrl });
+      if (errors.imageCover) {
+        setErrors({ ...errors, imageCover: undefined });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePreview = () => {
-    console.log("Preview data:", formData);
-
-    if (onPreview) {
-      const cardData: BusinessCardData = {
-        id: initialData?.id || generateId(),
-        ...formData,
-        createdAt: initialData?.createdAt || new Date().toISOString(),
-      };
-      onPreview(cardData);
+    if (!validateForm()) {
+      return;
     }
+
+    const previewData: BusinessCardData = {
+      id: generateId(),
+      slug: createSlug(formData.name), // Generate preview slug
+      ...formData,
+      createdAt: new Date().toISOString(),
+    };
+
+    onPreview?.(previewData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (isSubmitting) return;
 
     if (!validateForm()) {
       return;
@@ -192,247 +239,235 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
     setIsSubmitting(true);
 
     try {
-      const cardData: BusinessCardData = {
-        id: initialData?.id || generateId(),
-        ...formData,
-        createdAt: initialData?.createdAt || new Date().toISOString(),
+      const cardData = {
+        name: formData.name,
+        title: formData.title,
+        phone1: formData.phone1,
+        phone2: formData.phone2,
+        email1: formData.email1,
+        email2: formData.email2,
+        address: formData.address,
+        avatar: formData.avatar,
+        imageCover: formData.imageCover,
       };
 
-      // Generate QR code for the card
-      const qrCode = await generateQRCode(cardData);
-      cardData.qrCode = qrCode;
+      let result;
 
-      const existingCards = JSON.parse(localStorage.getItem("businessCards") || "[]");
-      const updatedCards = existingCards.filter((card: BusinessCardData) => card.id !== cardData.id);
-      updatedCards.push(cardData);
-
-      localStorage.setItem("businessCards", JSON.stringify(updatedCards));
-
-      // Show success message
-      if (isEditMode) {
-        alert("Card visit đã được cập nhật thành công!");
+      if (isEditMode && initialData?.id) {
+        result = await updateCard(initialData.id, cardData);
+        toast({
+          title: "Thành công!",
+          description: "Card visit đã được cập nhật thành công!",
+        });
       } else {
-        alert("Card visit đã được tạo thành công!");
+        result = await createCard(cardData);
+        toast({
+          title: "Thành công!",
+          description: "Card visit đã được tạo thành công!",
+        });
       }
 
-      onSubmit(cardData);
+      const cardWithQR: BusinessCardData = {
+        id: result.id,
+        slug: result.slug,
+        ...formData,
+        qrCode: await generateQRCode({
+          id: result.id,
+          slug: result.slug,
+          ...formData,
+          createdAt: result.createdAt,
+        }),
+        createdAt: result.createdAt,
+      };
+
+      onSubmit(cardWithQR);
+
+      // Navigate to my-cards page after successful creation/update
+      router.push("/my-cards");
     } catch (error) {
-      console.error("Error saving to localStorage:", error);
-      alert("Có lỗi xảy ra khi lưu card visit. Vui lòng thử lại.");
+      console.error("Error saving to Firebase:", error);
+      toast({
+        title: "Có lỗi xảy ra",
+        description: `Lỗi khi lưu card visit: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Card>
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Thông tin card visit</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl text-center pt-4">
+          {isEditMode ? "Chỉnh sửa Card Visit" : "Tạo Card Visit Mới"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Họ và tên *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="Nguyễn Văn A"
-                required
-                className={errors.name ? "border-red-500" : ""}
-              />
-              {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
-            </div>
-            <div>
-              <Label htmlFor="title">Chức vụ *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                placeholder="Giám đốc kinh doanh"
-                required
-                className={errors.title ? "border-red-500" : ""}
-              />
-              {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
-            </div>
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Họ và tên */}
           <div>
-            <Label htmlFor="company">Công ty *</Label>
+            <Label htmlFor="name" className="text-sm font-medium">
+              Họ và tên <span className="text-red-500">*</span>
+            </Label>
             <Input
-              id="company"
-              value={formData.company}
-              onChange={(e) => handleInputChange("company", e.target.value)}
-              placeholder="Công ty ABC"
-              required
-              className={errors.company ? "border-red-500" : ""}
+              id="name"
+              type="text"
+              placeholder="Nhập họ và tên"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              className={errors.name ? "border-red-500" : ""}
             />
-            {errors.company && <p className="text-sm text-red-500 mt-1">{errors.company}</p>}
+            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+          </div>
+
+          {/* Chức vụ */}
+          <div>
+            <Label htmlFor="title" className="text-sm font-medium">
+              Chức vụ <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="title"
+              type="text"
+              placeholder="Nhập chức vụ"
+              value={formData.title}
+              onChange={(e) => handleInputChange("title", e.target.value)}
+              className={errors.title ? "border-red-500" : ""}
+            />
+            {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
           </div>
 
           <div>
-            <Label htmlFor="image">Ảnh đại diện</Label>
-            <div className="space-y-2">
-              <Input
-                ref={fileInputRef}
-                id="image"
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/gif"
-                onChange={handleImageUpload}
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              <p className="text-xs text-gray-500">
-                Chấp nhận JPG, PNG, GIF. Tối đa 5MB. Ảnh sẽ được lưu trên thiết bị của bạn.
-              </p>
-              {formData.image && (
+            <Label htmlFor="phone1" className="text-sm font-medium">
+              Số điện thoại 1 <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="phone1"
+              type="tel"
+              placeholder="Nhập số điện thoại chính"
+              value={formData.phone1}
+              onChange={(e) => handleInputChange("phone1", e.target.value)}
+              className={errors.phone1 ? "border-red-500" : ""}
+            />
+            {errors.phone1 && <p className="text-sm text-red-500 mt-1">{errors.phone1}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="phone2" className="text-sm font-medium">
+              Số điện thoại 2 <span className="text-gray-400">(Tùy chọn)</span>
+            </Label>
+            <Input
+              id="phone2"
+              type="tel"
+              placeholder="Nhập số điện thoại phụ"
+              value={formData.phone2}
+              onChange={(e) => handleInputChange("phone2", e.target.value)}
+              className={errors.phone2 ? "border-red-500" : ""}
+            />
+            {errors.phone2 && <p className="text-sm text-red-500 mt-1">{errors.phone2}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="email1" className="text-sm font-medium">
+              Email 1 <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="email1"
+              type="email"
+              placeholder="Nhập email chính"
+              value={formData.email1}
+              onChange={(e) => handleInputChange("email1", e.target.value)}
+              className={errors.email1 ? "border-red-500" : ""}
+            />
+            {errors.email1 && <p className="text-sm text-red-500 mt-1">{errors.email1}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="email2" className="text-sm font-medium">
+              Email 2 <span className="text-gray-400">(Tùy chọn)</span>
+            </Label>
+            <Input
+              id="email2"
+              type="email"
+              placeholder="Nhập email phụ"
+              value={formData.email2}
+              onChange={(e) => handleInputChange("email2", e.target.value)}
+              className={errors.email2 ? "border-red-500" : ""}
+            />
+            {errors.email2 && <p className="text-sm text-red-500 mt-1">{errors.email2}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="address" className="text-sm font-medium">
+              Địa chỉ <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="address"
+              type="text"
+              placeholder="Nhập địa chỉ"
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+              className={errors.address ? "border-red-500" : ""}
+            />
+            {errors.address && <p className="text-sm text-red-500 mt-1">{errors.address}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="avatar" className="text-sm font-medium">
+              Ảnh đại diện <span className="text-red-500">*</span>
+            </Label>
+            <div className="mt-2 flex items-center gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => avatarInputRef.current?.click()}
+                className="shrink-0"
+              >
+                Chọn ảnh đại diện
+              </Button>
+              {formData.avatar && (
                 <div className="flex items-center gap-2">
-                  <img src={formData.image} alt="Preview" className="w-16 h-16 object-cover rounded-full border" />
-                  <Button type="button" variant="outline" size="sm" onClick={handleRemoveImage}>
-                    Xóa ảnh
+                  <img
+                    src={formData.avatar}
+                    alt="Avatar Preview"
+                    className="w-16 h-16 object-cover rounded-full border"
+                  />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => handleInputChange("avatar", "")}>
+                    ✕ Xóa
                   </Button>
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="example@company.com"
-                required
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
-            </div>
-            <div>
-              <Label htmlFor="phone">Số điện thoại</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+84 123 456 789"
-                className={errors.phone ? "border-red-500" : ""}
-              />
-              {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
-            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, "avatar")}
+              className="hidden"
+            />
+            {errors.avatar && <p className="text-sm text-red-500 mt-1">{errors.avatar}</p>}
           </div>
 
           <div>
-            <Label htmlFor="website">Website</Label>
-            <Input
-              id="website"
-              value={formData.website}
-              onChange={(e) => handleInputChange("website", e.target.value)}
-              placeholder="https://company.com"
-              className={errors.website ? "border-red-500" : ""}
-            />
-            {errors.website && <p className="text-sm text-red-500 mt-1">{errors.website}</p>}
-          </div>
-
-          <div>
-            <Label htmlFor="address">Địa chỉ</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) => handleInputChange("address", e.target.value)}
-              placeholder="123 Đường ABC, Quận 1, TP.HCM"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="bio">Giới thiệu</Label>
-            <Textarea
-              id="bio"
-              value={formData.bio}
-              onChange={(e) => handleInputChange("bio", e.target.value)}
-              placeholder="Mô tả ngắn về bản thân hoặc công việc..."
-              rows={3}
-              maxLength={500}
-            />
-            <p className="text-xs text-gray-500 mt-1">{formData.bio.length}/500 ký tự</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="linkedin">LinkedIn</Label>
-              <Input
-                id="linkedin"
-                value={formData.linkedin}
-                onChange={(e) => handleInputChange("linkedin", e.target.value)}
-                placeholder="https://linkedin.com/in/username"
-                className={errors.linkedin ? "border-red-500" : ""}
+            <Label htmlFor="imageCover" className="text-sm font-medium">
+              Ảnh bìa <span className="text-red-500">*</span>
+            </Label>
+            <div className="mt-2">
+              <CoverImageSelector
+                selectedCover={formData.imageCover}
+                onCoverChange={(coverPath) => handleInputChange("imageCover", coverPath)}
+                onCustomUpload={handleCustomCoverUpload}
               />
-              {errors.linkedin && <p className="text-sm text-red-500 mt-1">{errors.linkedin}</p>}
             </div>
-            <div>
-              <Label htmlFor="twitter">Twitter</Label>
-              <Input
-                id="twitter"
-                value={formData.twitter}
-                onChange={(e) => handleInputChange("twitter", e.target.value)}
-                placeholder="https://twitter.com/username"
-                className={errors.twitter ? "border-red-500" : ""}
-              />
-              {errors.twitter && <p className="text-sm text-red-500 mt-1">{errors.twitter}</p>}
-            </div>
+            {errors.imageCover && <p className="text-sm text-red-500 mt-1">{errors.imageCover}</p>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="backgroundColor">Màu nền</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="backgroundColor"
-                  type="color"
-                  value={formData.backgroundColor}
-                  onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
-                  className="w-16 h-10"
-                />
-                <Input
-                  value={formData.backgroundColor}
-                  onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
-                  placeholder="#ffffff"
-                  className="flex-1"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="textColor">Màu chữ</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="textColor"
-                  type="color"
-                  value={formData.textColor}
-                  onChange={(e) => handleInputChange("textColor", e.target.value)}
-                  className="w-16 h-10"
-                />
-                <Input
-                  value={formData.textColor}
-                  onChange={(e) => handleInputChange("textColor", e.target.value)}
-                  placeholder="#000000"
-                  className="flex-1"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full bg-transparent cursor-pointer"
-              onClick={handlePreview}
-            >
+          <div className="flex flex-col sm:flex-row gap-3 pt-6">
+            <Button type="button" variant="outline" onClick={handlePreview} className="flex-1" disabled={isSubmitting}>
               Xem trước
             </Button>
-            <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
-              {isSubmitting ? "Đang xử lý..." : isEditMode ? "Cập nhật card visit" : "Tạo card visit"}
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+              {isSubmitting ? "Đang lưu..." : isEditMode ? "Cập nhật Card" : "Tạo Card Visit"}
             </Button>
           </div>
         </form>
