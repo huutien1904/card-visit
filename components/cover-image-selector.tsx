@@ -25,6 +25,7 @@ export function CoverImageSelector({
     const file = e.target.files?.[0];
     if (file && onCustomUpload) {
       onCustomUpload(file);
+      e.target.value = "";
     }
   };
 

@@ -2,19 +2,20 @@
 
 import type React from "react";
 
-import { useState, useRef, useEffect } from "react";
+import type { BusinessCardData } from "@/app/page";
+import { CoverImageSelector } from "@/components/cover-image-selector";
+import { ImageCropDialog } from "@/components/image-crop-dialog";
 import { Button } from "@/components/ui/button";
-import { generateQRCode } from "@/lib/qr-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useFirebaseCards, BusinessCard } from "@/hooks/use-firebase-cards";
-import { useRouter } from "next/navigation";
+import { useFirebaseCards } from "@/hooks/use-firebase-cards";
 import { useToast } from "@/hooks/use-toast";
-import { createSlug } from "@/lib/slug-utils";
-import { CoverImageSelector } from "@/components/cover-image-selector";
 import { COVER_IMAGES } from "@/lib/cover-images";
-import type { BusinessCardData } from "@/app/page";
+import { generateQRCode } from "@/lib/qr-utils";
+import { createSlug } from "@/lib/slug-utils";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface BusinessCardFormProps {
   onSubmit: (data: BusinessCardData) => void;
@@ -55,6 +56,10 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [tempImageForCrop, setTempImageForCrop] = useState<string>("");
+  const [imageTypeForCrop, setImageTypeForCrop] = useState<"avatar" | "cover">("avatar");
 
   useEffect(() => {
     if (initialData) {
@@ -127,7 +132,7 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
       newErrors.imageCover = "Ảnh nền là bắt buộc";
     } else {
       const isPresetCover = COVER_IMAGES.some((cover) => cover.path === formData.imageCover);
-      const isCustomUpload = formData.imageCover.startsWith("data:image/");
+      const isCustomUpload = formData.imageCover.startsWith("data:image/") || formData.imageCover.startsWith("blob:");
 
       if (!isPresetCover && !isCustomUpload) {
         newErrors.imageCover = "Vui lòng chọn ảnh nền từ danh sách hoặc upload ảnh riêng";
@@ -165,6 +170,7 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
           description: "Kích thước file quá lớn. Vui lòng chọn file nhỏ hơn 5MB.",
           variant: "destructive",
         });
+        e.target.value = "";
         return;
       }
 
@@ -174,21 +180,37 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
           description: "Vui lòng chọn file hình ảnh.",
           variant: "destructive",
         });
+        e.target.value = "";
         return;
       }
 
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
-        setFormData({ ...formData, [type]: imageUrl });
-
-        if (errors.avatar) {
-          const newErrors = { ...errors };
-          delete newErrors.avatar;
-          setErrors(newErrors);
-        }
+        setTempImageForCrop(imageUrl);
+        setImageTypeForCrop(type);
+        setCropDialogOpen(true);
+        e.target.value = "";
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = (croppedImageUrl: string) => {
+    if (imageTypeForCrop === "avatar") {
+      setFormData({ ...formData, avatar: croppedImageUrl });
+      if (errors.avatar) {
+        const newErrors = { ...errors };
+        delete newErrors.avatar;
+        setErrors(newErrors);
+      }
+    } else if (imageTypeForCrop === "cover") {
+      setFormData({ ...formData, imageCover: croppedImageUrl });
+      if (errors.imageCover) {
+        const newErrors = { ...errors };
+        delete newErrors.imageCover;
+        setErrors(newErrors);
+      }
     }
   };
 
@@ -214,13 +236,16 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
     const reader = new FileReader();
     reader.onload = (event) => {
       const imageUrl = event.target?.result as string;
-      setFormData({ ...formData, imageCover: imageUrl });
-
-      if (errors.imageCover) {
-        const newErrors = { ...errors };
-        delete newErrors.imageCover;
-        setErrors(newErrors);
-      }
+      setTempImageForCrop(imageUrl);
+      setImageTypeForCrop("cover");
+      setCropDialogOpen(true);
+    };
+    reader.onerror = (error) => {
+      toast({
+        title: "Lỗi đọc file",
+        description: "Không thể đọc file ảnh. Vui lòng thử lại.",
+        variant: "destructive",
+      });
     };
     reader.readAsDataURL(file);
   };
@@ -293,13 +318,22 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
 
       onSubmit(cardWithQR);
 
-      // Navigate to my-cards page after successful creation/update
       router.push("/my-cards");
     } catch (error) {
       console.error("Error saving to Firebase:", error);
+
+      let errorMessage = "Unknown error";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else if (error && typeof error === "object" && "message" in error) {
+        errorMessage = String((error as any).message);
+      }
+
       toast({
         title: "Có lỗi xảy ra",
-        description: `Lỗi khi lưu card visit: ${error instanceof Error ? error.message : "Unknown error"}`,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -483,6 +517,15 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
           </div>
         </form>
       </CardContent>
+
+      <ImageCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageSrc={tempImageForCrop}
+        onCropComplete={handleCropComplete}
+        aspectRatio={imageTypeForCrop === "avatar" ? 1 : 16 / 9}
+        circularCrop={imageTypeForCrop === "avatar"}
+      />
     </Card>
   );
 }

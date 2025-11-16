@@ -101,6 +101,10 @@ export default function MyCardsPage() {
     if (confirm("Bạn có chắc chắn muốn xóa card visit này?")) {
       try {
         await deleteCard(cardId);
+        toast({
+          title: "Xóa thành công",
+          description: "Card visit đã được xóa.",
+        });
       } catch (error) {
         toast({
           title: "Có lỗi xảy ra",
@@ -362,7 +366,7 @@ export default function MyCardsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDeleteCard(card.id)}
+                      onClick={() => handleDeleteCard(card.slug || card.id)}
                       className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer flex items-center justify-center"
                       title="Xóa card"
                     >

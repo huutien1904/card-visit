@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/contexts/auth-context";
 import "./globals.css";
 
 const inter = Inter({
@@ -28,9 +29,11 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
-        <Analytics />
-        <Toaster />
+        <AuthProvider>
+          {children}
+          <Analytics />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

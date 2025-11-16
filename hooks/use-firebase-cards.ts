@@ -12,9 +12,23 @@ export interface BusinessCard {
   address: string;
   avatar: string;
   imageCover: string;
+  userId?: string;
   createdAt: string;
   updatedAt: string;
   qrCode?: string;
+}
+
+function getAuthHeaders(): HeadersInit {
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  const headers: HeadersInit = {
+    "Cache-Control": "no-cache",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
 export function useFirebaseCards() {
@@ -25,7 +39,10 @@ export function useFirebaseCards() {
   const fetchCards = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/cards");
+      const response = await fetch("/api/cards", {
+        cache: "no-store",
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -42,12 +59,13 @@ export function useFirebaseCards() {
   }, []);
 
   const createCard = useCallback(
-    async (cardData: Omit<BusinessCard, "id" | "slug" | "createdAt" | "updatedAt">) => {
+    async (cardData: Omit<BusinessCard, "id" | "slug" | "createdAt" | "updatedAt" | "userId">) => {
       try {
         const response = await fetch("/api/cards", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify(cardData),
         });
@@ -55,13 +73,14 @@ export function useFirebaseCards() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to create card");
+          const errorMessage = data.error || data.message || data.details || "Failed to create card";
+          throw new Error(errorMessage);
         }
 
-        await fetchCards(); // Refresh the list
+        await fetchCards();
         return data.card;
       } catch (err) {
-        throw new Error(err instanceof Error ? err.message : "Failed to create card");
+        throw err;
       }
     },
     [fetchCards]
@@ -70,7 +89,10 @@ export function useFirebaseCards() {
   const getCard = useCallback(async (identifier: string): Promise<BusinessCard> => {
     try {
       if (!identifier.match(/^[a-f\d]{24}$/i)) {
-        const response = await fetch(`/api/cards/slug/${identifier}`);
+        const response = await fetch(`/api/cards/slug/${identifier}`, {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
         const data = await response.json();
 
         if (!response.ok) {
@@ -80,7 +102,10 @@ export function useFirebaseCards() {
         return data.card;
       }
 
-      const allCards = await fetch("/api/cards").then((res) => res.json());
+      const allCards = await fetch("/api/cards", {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      }).then((res) => res.json());
       const card = allCards.cards?.find((c: BusinessCard) => c.id === identifier);
 
       if (!card) {
@@ -95,7 +120,10 @@ export function useFirebaseCards() {
 
   const getCardBySlug = useCallback(async (slug: string): Promise<BusinessCard> => {
     try {
-      const response = await fetch(`/api/cards/slug/${slug}`);
+      const response = await fetch(`/api/cards/slug/${slug}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -114,7 +142,10 @@ export function useFirebaseCards() {
         let slug = identifier;
 
         if (identifier.match(/^[a-f\d]{24}$/i)) {
-          const allCards = await fetch("/api/cards").then((res) => res.json());
+          const allCards = await fetch("/api/cards", {
+            cache: "no-store",
+            headers: getAuthHeaders(),
+          }).then((res) => res.json());
           const card = allCards.cards?.find((c: BusinessCard) => c.id === identifier);
           if (!card) {
             throw new Error("Card not found");
@@ -126,6 +157,7 @@ export function useFirebaseCards() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify(cardData),
         });
@@ -133,51 +165,53 @@ export function useFirebaseCards() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to update card");
+          const errorMessage = data.error || data.message || data.details || "Failed to update card";
+          throw new Error(errorMessage);
         }
 
         await fetchCards(); // Refresh the list
         return data.card;
       } catch (err) {
-        throw new Error(err instanceof Error ? err.message : "Failed to update card");
+        throw err;
       }
     },
     [fetchCards]
   );
 
-  const deleteCard = useCallback(
-    async (identifier: string) => {
-      try {
-        let slug = identifier;
+  const deleteCard = useCallback(async (identifier: string) => {
+    try {
+      let slug = identifier;
 
-        // If identifier looks like an ID, find the card first to get its slug
-        if (identifier.match(/^[a-f\d]{24}$/i)) {
-          const allCards = await fetch("/api/cards").then((res) => res.json());
-          const card = allCards.cards?.find((c: BusinessCard) => c.id === identifier);
-          if (!card) {
-            throw new Error("Card not found");
-          }
-          slug = card.slug;
+      if (!identifier.match(/^[a-z0-9-]+$/)) {
+        const allCards = await fetch("/api/cards", {
+          cache: "no-store",
+          headers: getAuthHeaders(),
+        }).then((res) => res.json());
+        const foundCard = allCards.cards?.find((c: BusinessCard) => c.id === identifier);
+        if (!foundCard || !foundCard.slug) {
+          throw new Error("Card not found or missing slug");
         }
-
-        const response = await fetch(`/api/cards/slug/${slug}`, {
-          method: "DELETE",
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to delete card");
-        }
-
-        await fetchCards(); // Refresh the list
-        return true;
-      } catch (err) {
-        throw new Error(err instanceof Error ? err.message : "Failed to delete card");
+        slug = foundCard.slug;
       }
-    },
-    [fetchCards]
-  );
+
+      const response = await fetch(`/api/cards/slug/${slug}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete card");
+      }
+
+      setCards((prevCards) => prevCards.filter((c) => c.slug !== slug));
+
+      return true;
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : "Failed to delete card");
+    }
+  }, []);
 
   useEffect(() => {
     fetchCards();
@@ -208,7 +242,6 @@ export function useFirebaseCard(id: string | null) {
       setError(null);
       setNotFound(false);
 
-      // If it looks like a slug, use slug endpoint directly
       if (!cardIdentifier.match(/^[a-f\d]{24}$/i)) {
         const response = await fetch(`/api/cards/slug/${cardIdentifier}`);
         const data = await response.json();
@@ -226,7 +259,6 @@ export function useFirebaseCard(id: string | null) {
         return;
       }
 
-      // If it looks like an ID, search through all cards
       const response = await fetch("/api/cards");
       const data = await response.json();
 

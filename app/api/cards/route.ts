@@ -1,67 +1,101 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { createSlug, generateUniqueSlug } from "@/lib/slug-utils";
+import { withAuth } from "@/lib/auth-middleware";
+import { getTokenFromRequest, verifyToken } from "@/lib/auth-utils";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// get list card
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const cardsRef = adminDb.collection("cards");
-    const snapshot = await cardsRef.orderBy("createdAt", "desc").get();
+    const token = getTokenFromRequest(request);
 
-    const cards = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const cardsRef = adminDb.collection("cards");
+    let snapshot;
+
+    if (token) {
+      const user = await verifyToken(token);
+
+      if (user && user.role === "user") {
+        snapshot = await cardsRef.where("userId", "==", user.userId).get();
+      } else if (user && user.role === "admin") {
+        snapshot = await cardsRef.get();
+      } else {
+        return NextResponse.json({ cards: [] }, { status: 200 });
+      }
+    } else {
+      return NextResponse.json({ cards: [] }, { status: 200 });
+    }
+
+    const cards = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(0);
+        return bTime.getTime() - aTime.getTime();
+      });
 
     return NextResponse.json({ cards }, { status: 200 });
   } catch (error) {
     console.error("Error fetching cards:", error);
+
+    if (error instanceof Error && error.message.includes("index")) {
+      return NextResponse.json(
+        {
+          error: "Database index required. Please create the composite index for userId and createdAt fields.",
+          details: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to fetch cards" }, { status: 500 });
   }
 }
-// create new card
+
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const requiredFields = ["name", "title", "phone1", "email1", "address", "avatar", "imageCover"];
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
+  return withAuth(request, async (req, user) => {
+    try {
+      const body = await req.json();
+      const requiredFields = ["name", "title", "phone1", "email1", "address", "avatar", "imageCover"];
+      for (const field of requiredFields) {
+        if (!body[field]) {
+          return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
+        }
       }
+
+      const baseSlug = createSlug(body.name);
+
+      const cardsRef = adminDb.collection("cards");
+      const existingCards = await cardsRef.select("slug").get();
+      const existingSlugs = existingCards.docs.map((doc) => doc.data().slug).filter(Boolean);
+
+      const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
+
+      const cardData = {
+        ...body,
+        userId: user.userId,
+        slug: uniqueSlug,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const docRef = await adminDb.collection("cards").add(cardData);
+
+      return NextResponse.json(
+        {
+          message: "Card created successfully",
+          id: docRef.id,
+          card: { id: docRef.id, ...cardData },
+        },
+        { status: 201 }
+      );
+    } catch (error) {
+      return NextResponse.json({ error: "Failed to create card" }, { status: 500 });
     }
-
-    // Generate slug from name
-    const baseSlug = createSlug(body.name);
-
-    // Get existing slugs to ensure uniqueness
-    const cardsRef = adminDb.collection("cards");
-    const existingCards = await cardsRef.select("slug").get();
-    const existingSlugs = existingCards.docs.map((doc) => doc.data().slug).filter(Boolean);
-
-    // Generate unique slug
-    const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
-
-    const cardData = {
-      ...body,
-      slug: uniqueSlug,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const docRef = await adminDb.collection("cards").add(cardData);
-
-    return NextResponse.json(
-      {
-        message: "Card created successfully",
-        id: docRef.id,
-        card: { id: docRef.id, ...cardData },
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("Error creating card:", error);
-    return NextResponse.json({ error: "Failed to create card" }, { status: 500 });
-  }
+  });
 }

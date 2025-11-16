@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, List, Menu, X } from "lucide-react";
+import { Home, List, Menu, X, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CreditCard } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout, isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -32,6 +35,11 @@ export function Navigation() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isMobileMenuOpen]);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/auth");
+  };
 
   const navItems = [
     {
@@ -77,6 +85,28 @@ export function Navigation() {
                 </Link>
               );
             })}
+
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <User className="w-4 h-4" />
+                  <span className="text-sm">{user?.username}</span>
+                  {user?.role === "admin" && (
+                    <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">Admin</span>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Đăng xuất
+                </Button>
+              </div>
+            ) : (
+              <Link href="/auth">
+                <Button variant="outline" size="sm" className="ml-4">
+                  Đăng nhập
+                </Button>
+              </Link>
+            )}
           </div>
 
           <div className="md:hidden">
@@ -115,6 +145,39 @@ export function Navigation() {
                 </Link>
               );
             })}
+
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
+              {isAuthenticated ? (
+                <>
+                  <div className="px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="w-4 h-4" />
+                      <span>{user?.username}</span>
+                      {user?.role === "admin" && (
+                        <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded">Admin</span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Đăng xuất
+                  </Button>
+                </>
+              ) : (
+                <Link href="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full">
+                    Đăng nhập
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
