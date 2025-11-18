@@ -2,8 +2,9 @@
 
 import type { BusinessCardData } from "@/app/page";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { QrCode } from "lucide-react";
 import Image from "next/image";
-import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 
 interface BusinessCardPreviewProps {
@@ -13,16 +14,18 @@ interface BusinessCardPreviewProps {
 
 export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewProps) {
   const [shareUrl, setShareUrl] = useState("");
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setShareUrl(`${window.location.origin}/${data?.slug}`);
+      const url = `${window.location.origin}/${data?.slug}`;
+      setShareUrl(url);
+      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`);
     }
   }, [data?.slug]);
 
   const downloadVCard = () => {
-    // Generate and download vCard
     const vCardContent = [
       "BEGIN:VCARD",
       "VERSION:3.0",
@@ -58,7 +61,11 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
       >
         <div className="relative h-54 bg-blue-600">
           {data?.imageCover ? (
-            <Image src={data.imageCover} alt="Cover" fill className="object-cover" />
+            data.imageCover.startsWith("data:") ? (
+              <img src={data.imageCover} alt="Cover" className="w-full h-full object-cover" />
+            ) : (
+              <Image src={data.imageCover} alt="Cover" fill className="object-cover" />
+            )
           ) : (
             <div className="w-full h-full bg-blue-600" />
           )}
@@ -142,16 +149,45 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
             )}
           </div>
 
-          <div className={`text-center ${!isDetailMode ? "mb-12" : "mb-6"}`}>
+          <div className={`flex sm:flex-row gap-3 justify-center items-center ${!isDetailMode ? "mb-12" : "mb-6"}`}>
             <Button
-              className="bg-[#0C76EA] hover:bg-[#0e4e8c] text-white py-5 px-6 rounded-full font-medium cursor-pointer w-60 text-base"
+              className="bg-[#0C76EA] hover:bg-[#0e4e8c] text-white py-5 px-6 rounded-full font-medium cursor-pointer w-48 text-base"
               onClick={downloadVCard}
             >
               Add to contacts
             </Button>
+            <Button
+              variant="outline"
+              className="border-[#0C76EA] text-[#0C76EA] hover:bg-[#0C76EA] hover:text-white py-5 px-6 rounded-full font-medium cursor-pointer w-32 text-base flex items-center gap-1"
+              onClick={() => setIsQRModalOpen(true)}
+            >
+              <QrCode className="w-4 h-4" />
+              QR
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      <Dialog open={isQRModalOpen} onOpenChange={setIsQRModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-semibold text-primary-blue">
+              QR Code for {data?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4 py-4">
+            <div className="bg-white p-4 rounded-lg border">
+              <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
+            </div>
+            <p className="text-sm text-gray-600 text-center px-4">Quét mã QR này để truy cập thẻ danh thiếp</p>
+            <p className="text-xs text-gray-500 text-center px-4 break-all">{shareUrl}</p>
+            <Button variant="outline" onClick={() => setIsQRModalOpen(false)} className="mt-4">
+              Đóng
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
