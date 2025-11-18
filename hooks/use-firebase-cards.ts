@@ -5,6 +5,7 @@ export interface BusinessCard {
   slug: string;
   name: string;
   title: string;
+  company?: string;
   phone1: string;
   phone2?: string;
   email1: string;

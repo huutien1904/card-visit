@@ -41,19 +41,17 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ cards }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching cards:", error);
-
     if (error instanceof Error && error.message.includes("index")) {
       return NextResponse.json(
         {
-          error: "Database index required. Please create the composite index for userId and createdAt fields.",
+          error: "Cần có chỉ mục cơ sở dữ liệu. Vui lòng tạo chỉ mục tổng hợp cho các trường userId và createdAt.",
           details: error.message,
         },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ error: "Failed to fetch cards" }, { status: 500 });
+    return NextResponse.json({ error: "Lấy thẻ thất bại" }, { status: 500 });
   }
 }
 
@@ -64,8 +62,12 @@ export async function POST(request: NextRequest) {
       const requiredFields = ["name", "title", "phone1", "email1", "address", "avatar", "imageCover"];
       for (const field of requiredFields) {
         if (!body[field]) {
-          return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
+          return NextResponse.json({ error: `Thiếu trường bắt buộc: ${field}` }, { status: 400 });
         }
+      }
+
+      if (body.company !== undefined && body.company.toString().trim() === "") {
+        return NextResponse.json({ error: "Trường công ty không được để trống nếu được cung cấp" }, { status: 400 });
       }
 
       const baseSlug = createSlug(body.name);
@@ -88,14 +90,14 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         {
-          message: "Card created successfully",
+          message: "Tạo thẻ thành công",
           id: docRef.id,
           card: { id: docRef.id, ...cardData },
         },
         { status: 201 }
       );
     } catch (error) {
-      return NextResponse.json({ error: "Failed to create card" }, { status: 500 });
+      return NextResponse.json({ error: "Tạo thẻ thất bại" }, { status: 500 });
     }
   });
 }

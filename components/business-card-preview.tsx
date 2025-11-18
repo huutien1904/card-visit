@@ -31,6 +31,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
       "VERSION:3.0",
       `FN:${data.name}`,
       `TITLE:${data.title}`,
+      data.company ? `ORG:${data.company}` : "",
       data.phone1 ? `TEL:${data.phone1}` : "",
       data.phone2 ? `TEL:${data.phone2}` : "",
       data.email1 ? `EMAIL:${data.email1}` : "",
@@ -92,6 +93,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-primary-blue mb-1">{data?.name}</h1>
             <p className="text-primary-blue text-base">{data?.title}</p>
+            {data?.company && <p className="text-primary-blue text-sm mt-1 font-medium">Công ty {data.company}</p>}
           </div>
 
           <div className="space-y-3 mb-6">

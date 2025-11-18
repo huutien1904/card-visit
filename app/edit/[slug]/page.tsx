@@ -28,6 +28,7 @@ export default function EditCardSlugPage() {
         slug: firebaseCard.slug,
         name: firebaseCard.name,
         title: firebaseCard.title,
+        company: firebaseCard.company || "",
         phone1: firebaseCard.phone1,
         phone2: firebaseCard.phone2 || "",
         email1: firebaseCard.email1,
@@ -96,7 +97,7 @@ export default function EditCardSlugPage() {
             </Button>
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">Chỉnh sửa Card Visit</CardTitle>
+                <CardTitle className="text-2xl mt-4">Chỉnh sửa Card Visit</CardTitle>
                 <CardDescription>Cập nhật thông tin card visit của bạn</CardDescription>
               </CardHeader>
             </Card>
@@ -115,7 +116,7 @@ export default function EditCardSlugPage() {
             <div>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Xem trước</CardTitle>
+                  <CardTitle className="text-lg mt-2">Xem trước</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {previewData ? (

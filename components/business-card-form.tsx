@@ -24,9 +24,23 @@ interface BusinessCardFormProps {
   isEditMode?: boolean;
 }
 
+interface CardFormData {
+  name: string;
+  title: string;
+  company: string;
+  phone1: string;
+  phone2: string;
+  email1: string;
+  email2: string;
+  address: string;
+  avatar: string;
+  imageCover: string;
+}
+
 interface FormErrors {
   name?: string;
   title?: string;
+  company?: string;
   phone1?: string;
   phone2?: string;
   email1?: string;
@@ -41,16 +55,17 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
   const router = useRouter();
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CardFormData>({
     name: initialData?.name || "",
     title: initialData?.title || "",
+    company: initialData?.company || "",
     phone1: initialData?.phone1 || "",
     phone2: initialData?.phone2 || "",
     email1: initialData?.email1 || "",
     email2: initialData?.email2 || "",
     address: initialData?.address || "",
     avatar: initialData?.avatar || "",
-    imageCover: initialData?.imageCover || COVER_IMAGES[0].path, // Default to first cover image
+    imageCover: initialData?.imageCover || COVER_IMAGES[0].path,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -66,6 +81,7 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
       setFormData({
         name: initialData.name || "",
         title: initialData.title || "",
+        company: initialData.company || "",
         phone1: initialData.phone1 || "",
         phone2: initialData.phone2 || "",
         email1: initialData.email1 || "",
@@ -278,6 +294,7 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
       const cardData = {
         name: formData.name,
         title: formData.title,
+        company: formData.company,
         phone1: formData.phone1,
         phone2: formData.phone2,
         email1: formData.email1,
@@ -289,8 +306,8 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
 
       let result;
 
-      if (isEditMode && initialData?.id) {
-        result = await updateCard(initialData.id, cardData);
+      if (isEditMode && initialData?.slug) {
+        result = await updateCard(initialData.slug, cardData);
         toast({
           title: "Thành công!",
           description: "Card visit đã được cập nhật thành công!",
@@ -318,10 +335,12 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
 
       onSubmit(cardWithQR);
 
-      router.push("/my-cards");
+      if (isEditMode && result.slug) {
+        router.push(`/${result.slug}`);
+      } else {
+        router.push("/my-cards");
+      }
     } catch (error) {
-      console.error("Error saving to Firebase:", error);
-
       let errorMessage = "Unknown error";
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -380,6 +399,19 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
               className={errors.title ? "border-red-500" : ""}
             />
             {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="company" className="text-sm font-medium">
+              Tên công ty
+            </Label>
+            <Input
+              id="company"
+              type="text"
+              placeholder="Nhập tên công ty (tuỳ chọn)"
+              value={formData.company}
+              onChange={(e) => handleInputChange("company", e.target.value)}
+            />
           </div>
 
           <div>

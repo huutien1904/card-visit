@@ -12,14 +12,14 @@ export async function POST(request: NextRequest) {
     const { username, password } = body;
 
     if (!username || !password) {
-      return NextResponse.json({ error: "Username and password are required" }, { status: 400 });
+      return NextResponse.json({ error: "Tên đăng nhập và mật khẩu là bắt buộc" }, { status: 400 });
     }
 
     const usersRef = adminDb.collection("users");
     const snapshot = await usersRef.where("username", "==", username).limit(1).get();
 
     if (snapshot.empty) {
-      return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
+      return NextResponse.json({ error: "Tên đăng nhập hoặc mật khẩu không hợp lệ" }, { status: 401 });
     }
 
     const userDoc = snapshot.docs[0];
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await comparePassword(password, userData.password);
 
     if (!isValidPassword) {
-      return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
+      return NextResponse.json({ error: "Tên đăng nhập hoặc mật khẩu không hợp lệ" }, { status: 401 });
     }
 
     const token = await createToken({
@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response, { status: 200 });
   } catch (error) {
-    console.error("Error logging in:", error);
-    return NextResponse.json({ error: "Failed to login" }, { status: 500 });
+    return NextResponse.json({ error: "Đăng nhập thất bại" }, { status: 500 });
   }
 }

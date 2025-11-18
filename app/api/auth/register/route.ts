@@ -12,22 +12,22 @@ export async function POST(request: NextRequest) {
     const { username, password, role = "user" } = body;
 
     if (!username || !password) {
-      return NextResponse.json({ error: "Username and password are required" }, { status: 400 });
+      return NextResponse.json({ error: "Tên đăng nhập và mật khẩu là bắt buộc" }, { status: 400 });
     }
 
     if (username.length < 3) {
-      return NextResponse.json({ error: "Username must be at least 3 characters" }, { status: 400 });
+      return NextResponse.json({ error: "Tên đăng nhập phải có ít nhất 3 ký tự" }, { status: 400 });
     }
 
     if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+      return NextResponse.json({ error: "Mật khẩu phải có ít nhất 6 ký tự" }, { status: 400 });
     }
 
     const usersRef = adminDb.collection("users");
     const existingUser = await usersRef.where("username", "==", username).limit(1).get();
 
     if (!existingUser.empty) {
-      return NextResponse.json({ error: "Username already exists" }, { status: 409 });
+      return NextResponse.json({ error: "Tên đăng nhập đã tồn tại" }, { status: 409 });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "User registered successfully",
+        message: "Đăng ký thành công",
         user: {
           id: docRef.id,
           username: userData.username,
@@ -55,6 +55,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    return NextResponse.json({ error: "Failed to register user" }, { status: 500 });
+    return NextResponse.json({ error: "Đăng ký thất bại" }, { status: 500 });
   }
 }

@@ -3,6 +3,16 @@
 import type { BusinessCardData } from "@/app/page";
 import { ErrorDisplay } from "@/components/error-display";
 import { Navigation } from "@/components/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +30,9 @@ export default function MyCardsPage() {
   const [firebaseCards, setFirebaseCards] = useState<BusinessCardData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredCards, setFilteredCards] = useState<BusinessCardData[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const convertCards = async () => {
@@ -30,6 +43,7 @@ export default function MyCardsPage() {
             slug: card.slug,
             name: card.name,
             title: card.title,
+            company: card.company || "",
             phone1: card.phone1,
             phone2: card.phone2 || "",
             email1: card.email1,
@@ -60,6 +74,7 @@ export default function MyCardsPage() {
         (card) =>
           card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (card.company && card.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
           card.email1.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (card.email2 && card.email2.toLowerCase().includes(searchQuery.toLowerCase())) ||
           card.phone1.includes(searchQuery) ||
@@ -97,21 +112,31 @@ export default function MyCardsPage() {
     );
   };
 
-  const handleDeleteCard = async (cardId: string) => {
-    if (confirm("Bạn có chắc chắn muốn xóa card visit này?")) {
-      try {
-        await deleteCard(cardId);
-        toast({
-          title: "Xóa thành công",
-          description: "Card visit đã được xóa.",
-        });
-      } catch (error) {
-        toast({
-          title: "Có lỗi xảy ra",
-          description: `Lỗi khi xóa card: ${error instanceof Error ? error.message : "Unknown error"}`,
-          variant: "destructive",
-        });
-      }
+  const handleDeleteCard = (cardId: string, cardName: string) => {
+    setCardToDelete({ id: cardId, name: cardName });
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteCard = async () => {
+    if (!cardToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteCard(cardToDelete.id);
+      toast({
+        title: "Xóa thành công",
+        description: "Card visit đã được xóa.",
+      });
+      setDeleteConfirmOpen(false);
+      setCardToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Có lỗi xảy ra",
+        description: `Lỗi khi xóa card: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -137,7 +162,7 @@ export default function MyCardsPage() {
     try {
       await navigator.clipboard.writeText(text);
       toast({
-        title: "Thành công!",
+        title: "Sao chép thành công!",
         description: "Đã sao chép link!",
       });
     } catch (error) {
@@ -197,7 +222,7 @@ export default function MyCardsPage() {
               </div>
               <Input
                 type="text"
-                placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+                placeholder="Tìm kiếm theo tên, công ty, email, số điện thoại..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-10"
@@ -271,8 +296,15 @@ export default function MyCardsPage() {
                       <CardTitle className="text-lg mb-1">
                         <HighlightedText text={card.name} highlight={searchQuery} />
                       </CardTitle>
-                      <CardDescription className="text-sm">
-                        <HighlightedText text={card.title} highlight={searchQuery} />
+                      <CardDescription className="text-sm space-y-1">
+                        <div>
+                          <HighlightedText text={card.title} highlight={searchQuery} />
+                        </div>
+                        {card.company && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            🏢 <HighlightedText text={card.company} highlight={searchQuery} />
+                          </div>
+                        )}
                       </CardDescription>
                     </div>
                     {card.avatar ? (
@@ -366,7 +398,7 @@ export default function MyCardsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDeleteCard(card.slug || card.id)}
+                      onClick={() => handleDeleteCard(card.slug || card.id, card.name)}
                       className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer flex items-center justify-center"
                       title="Xóa card"
                     >
@@ -380,6 +412,34 @@ export default function MyCardsPage() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={!isDeleting ? setDeleteConfirmOpen : undefined}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa card visit</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa card visit <strong>"{cardToDelete?.name}"</strong> không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteCard}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Đang xóa...
+                </div>
+              ) : (
+                "Xóa"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

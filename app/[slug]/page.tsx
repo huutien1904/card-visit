@@ -21,6 +21,7 @@ export default function CardSlugPage() {
         slug: firebaseCard.slug,
         name: firebaseCard.name,
         title: firebaseCard.title,
+        company: firebaseCard.company || "",
         phone1: firebaseCard.phone1,
         phone2: firebaseCard.phone2 || "",
         email1: firebaseCard.email1,
