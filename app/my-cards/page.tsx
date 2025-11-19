@@ -19,20 +19,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { useFirebaseCards } from "@/hooks/use-firebase-cards";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Eye, Plus, QrCode, Search, Share2, Trash2, X } from "lucide-react";
+import { Edit, Eye, Plus, QrCode, Search, Share2, Trash2, X, FileUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ImportModal } from "@/components/import-modal";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function MyCardsPage() {
   const router = useRouter();
   const { cards, loading, error, deleteCard } = useFirebaseCards();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [firebaseCards, setFirebaseCards] = useState<BusinessCardData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredCards, setFilteredCards] = useState<BusinessCardData[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   useEffect(() => {
     const convertCards = async () => {
@@ -123,15 +127,17 @@ export default function MyCardsPage() {
     setIsDeleting(true);
     try {
       await deleteCard(cardToDelete.id);
+
       toast({
-        title: "Xóa thành công",
+        title: "✅ Xóa thành công!",
         description: "Card visit đã được xóa.",
+        className: "border-green-500 bg-green-50 text-green-900",
       });
       setDeleteConfirmOpen(false);
       setCardToDelete(null);
     } catch (error) {
       toast({
-        title: "Có lỗi xảy ra",
+        title: "❌ Xóa thất bại",
         description: `Lỗi khi xóa card: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive",
       });
@@ -162,8 +168,9 @@ export default function MyCardsPage() {
     try {
       await navigator.clipboard.writeText(text);
       toast({
-        title: "Sao chép thành công!",
+        title: "✅ Sao chép thành công!",
         description: "Đã sao chép link!",
+        className: "border-green-500 bg-green-50 text-green-900",
       });
     } catch (error) {
       console.error("Failed to copy:", error);
@@ -250,10 +257,18 @@ export default function MyCardsPage() {
             )}
           </div>
 
-          <Button onClick={() => router.push("/")} className="flex items-center gap-2 shrink-0">
-            <Plus className="w-4 h-4" />
-            Tạo card visit mới
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            {isAdmin && (
+              <Button variant="outline" onClick={() => setImportModalOpen(true)} className="flex items-center gap-2">
+                <FileUp className="w-4 h-4" />
+                Import Excel
+              </Button>
+            )}
+            <Button onClick={() => router.push("/")} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Tạo card visit mới
+            </Button>
+          </div>
         </div>
 
         {firebaseCards.length === 0 ? (
@@ -440,6 +455,14 @@ export default function MyCardsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onSuccess={() => {
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

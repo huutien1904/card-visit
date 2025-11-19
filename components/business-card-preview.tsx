@@ -83,7 +83,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
                   className="rounded-full border-4 border-white object-cover"
                 />
               ) : (
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center">
+                <div className="w-45 h-45 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center">
                   <span className="text-gray-500 text-sm">Avatar</span>
                 </div>
               )}

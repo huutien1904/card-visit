@@ -40,13 +40,14 @@ export default function AuthPage() {
     try {
       await login(loginData);
       toast({
-        title: "Đăng nhập thành công!",
+        title: "✅ Đăng nhập thành công!",
         description: "Chào mừng bạn quay trở lại.",
+        className: "border-green-500 bg-green-50 text-green-900",
       });
       router.push("/my-cards");
     } catch (error) {
       toast({
-        title: "Đăng nhập thất bại",
+        title: "❌ Đăng nhập thất bại",
         description: error instanceof Error ? error.message : "Vui lòng kiểm tra lại thông tin.",
         variant: "destructive",
       });
@@ -60,7 +61,7 @@ export default function AuthPage() {
 
     if (registerData.password !== registerData.confirmPassword) {
       toast({
-        title: "Lỗi",
+        title: "❌ Lỗi",
         description: "Mật khẩu xác nhận không khớp.",
         variant: "destructive",
       });
@@ -69,7 +70,7 @@ export default function AuthPage() {
 
     if (registerData.password.length < 6) {
       toast({
-        title: "Lỗi",
+        title: "❌ Lỗi",
         description: "Mật khẩu phải có ít nhất 6 ký tự.",
         variant: "destructive",
       });
@@ -84,13 +85,14 @@ export default function AuthPage() {
         password: registerData.password,
       });
       toast({
-        title: "Đăng ký thành công!",
+        title: "✅ Đăng ký thành công!",
         description: "Tài khoản của bạn đã được tạo.",
+        className: "border-green-500 bg-green-50 text-green-900",
       });
       router.push("/my-cards");
     } catch (error) {
       toast({
-        title: "Đăng ký thất bại",
+        title: "❌ Đăng ký thất bại",
         description: error instanceof Error ? error.message : "Vui lòng thử lại.",
         variant: "destructive",
       });
