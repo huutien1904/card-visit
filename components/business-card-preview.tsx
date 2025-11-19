@@ -31,7 +31,6 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
       "VERSION:3.0",
       `FN:${data.name}`,
       `TITLE:${data.title}`,
-      data.company ? `ORG:${data.company}` : "",
       data.phone1 ? `TEL:${data.phone1}` : "",
       data.phone2 ? `TEL:${data.phone2}` : "",
       data.email1 ? `EMAIL:${data.email1}` : "",
@@ -91,7 +90,18 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
           </div>
 
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-primary-blue mb-1">{data?.name}</h1>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold text-primary-blue">{data?.name}</h1>
+              <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
             <p className="text-primary-blue text-base">{data?.title}</p>
             {data?.company && <p className="text-primary-blue text-sm mt-1 font-medium">Công ty {data.company}</p>}
           </div>
