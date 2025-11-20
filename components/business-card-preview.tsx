@@ -45,7 +45,6 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
   const downloadVCard = () => {
     const displayName = getDisplayName();
     const displayTitle = getDisplayTitle();
-    const displayCompany = getDisplayCompany();
     const displayAddress = getDisplayAddress();
 
     const vCardContent = [
@@ -53,7 +52,6 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
       "VERSION:3.0",
       `FN:${displayName}`,
       `TITLE:${displayTitle}`,
-      displayCompany ? `ORG:${displayCompany}` : "",
       data.phone1 ? `TEL:${data.phone1}` : "",
       data.phone2 ? `TEL:${data.phone2}` : "",
       data.email1 ? `EMAIL:${data.email1}` : "",
@@ -232,8 +230,6 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
           </div>
         </div>
       </div>
-
-      {/* QR Code Modal */}
     </div>
   );
 }
