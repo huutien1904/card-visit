@@ -227,7 +227,24 @@ export function removeVietnameseAccents(str: string): string {
     .join("");
 }
 
-// Function to translate job title
 export function translateJobTitle(vietnameseTitle: string): string {
-  return JOB_TITLE_TRANSLATIONS[vietnameseTitle] || vietnameseTitle;
+  if (!vietnameseTitle) return "";
+
+  if (JOB_TITLE_TRANSLATIONS[vietnameseTitle]) {
+    return JOB_TITLE_TRANSLATIONS[vietnameseTitle];
+  }
+
+  const normalizedTitle = vietnameseTitle.trim().replace(/\s+/g, " ");
+  if (JOB_TITLE_TRANSLATIONS[normalizedTitle]) {
+    return JOB_TITLE_TRANSLATIONS[normalizedTitle];
+  }
+
+  const titleLowerCase = normalizedTitle.toLowerCase();
+  for (const [key, value] of Object.entries(JOB_TITLE_TRANSLATIONS)) {
+    if (key.toLowerCase() === titleLowerCase) {
+      return value;
+    }
+  }
+
+  return vietnameseTitle;
 }
