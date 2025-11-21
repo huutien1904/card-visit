@@ -42,7 +42,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
     return isEnglish ? removeVietnameseAccents(data?.address || "") : data?.address || "";
   };
 
-  const downloadVCard = () => {
+  const downloadVCard = async () => {
     const displayName = getDisplayName();
     const displayTitle = getDisplayTitle();
     const displayAddress = getDisplayAddress();
@@ -62,11 +62,47 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
       .filter((line) => line.trim() !== "")
       .join("\n");
 
+    // Kiểm tra xem có phải mobile không
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile && navigator.share) {
+      // Sử dụng Web Share API cho mobile
+      try {
+        const blob = new Blob([vCardContent], { type: "text/vcard" });
+        const file = new File([blob], `${displayName}.vcf`, { type: "text/vcard" });
+        
+        await navigator.share({
+          title: `Liên hệ - ${displayName}`,
+          text: `Thông tin liên hệ của ${displayName}`,
+          files: [file]
+        });
+        return;
+      } catch (error) {
+        console.log("Web Share API không khả dụng, fallback to download");
+      }
+    }
+
+    // Fallback: tạo data URL với MIME type chuẩn cho vCard
+    const dataUrl = `data:text/vcard;charset=utf-8,${encodeURIComponent(vCardContent)}`;
+    
+    // Thử mở trực tiếp với intent Android
+    if (/Android/i.test(navigator.userAgent)) {
+      try {
+        // Tạo intent để mở trong ứng dụng Contacts
+        window.location.href = dataUrl;
+        return;
+      } catch (error) {
+        console.log("Android intent failed, fallback to download");
+      }
+    }
+
+    // Fallback cuối cùng: download file
     const blob = new Blob([vCardContent], { type: "text/vcard" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `${displayName}.vcf`;
+    link.setAttribute("type", "text/vcard");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -11,8 +11,10 @@ import { useFirebaseCardBySlug } from "@/hooks/use-firebase-cards";
 import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function EditCardSlugPage() {
+  const { isAdmin } = useAuth();
   const params = useParams();
   const router = useRouter();
   const slug = typeof params.slug === "string" ? params.slug : null;
@@ -55,6 +57,31 @@ export default function EditCardSlugPage() {
   const handleBack = () => {
     router.push("/my-cards");
   };
+
+  // Kiểm tra quyền admin
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-red-600 dark:text-red-400 text-2xl">⚠️</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Không có quyền truy cập</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">Chỉ admin mới có quyền chỉnh sửa card visit</p>
+                <Button onClick={() => router.push("/dashboard")} variant="outline">
+                  Quay lại Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

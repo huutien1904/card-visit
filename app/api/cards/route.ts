@@ -57,6 +57,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req, user) => {
+    if (user.role !== "admin") {
+      return NextResponse.json({ error: "Chỉ admin mới có quyền tạo card visit" }, { status: 403 });
+    }
+
     try {
       const body = await req.json();
       const requiredFields = ["name", "title", "phone1", "email1", "address", "avatar", "imageCover"];

@@ -179,7 +179,7 @@ export default function MyCardsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <Navigation />
         <div className="container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
@@ -195,12 +195,37 @@ export default function MyCardsPage() {
     return (
       <>
         <Navigation />
-        <ErrorDisplay
-          message={`Lỗi tải danh sách card: ${error}`}
-          onRetry={() => window.location.reload()}
-          onGoHome={() => router.push("/")}
-        />
+        <div className="mt-8">
+          <ErrorDisplay message={`Lỗi tải danh sách card: ${error}`} onRetry={() => window.location.reload()} />
+        </div>
       </>
+    );
+  }
+
+  // Kiểm tra quyền admin
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-red-600 dark:text-red-400 text-2xl">⚠️</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Không có quyền truy cập</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Chỉ admin mới có quyền quản lý danh sách card visit
+                </p>
+                <Button onClick={() => router.push("/auth")} variant="outline">
+                  Đăng nhập lại
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -264,10 +289,12 @@ export default function MyCardsPage() {
                 Import Excel
               </Button>
             )}
-            <Button onClick={() => router.push("/")} className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Tạo card visit mới
-            </Button>
+            {isAdmin && (
+              <Button onClick={() => router.push("/")} className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Tạo card visit mới
+              </Button>
+            )}
           </div>
         </div>
 
@@ -278,11 +305,15 @@ export default function MyCardsPage() {
                 <Plus className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Chưa có card visit nào</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">Tạo card visit đầu tiên của bạn để bắt đầu</p>
-              <Button onClick={() => router.push("/")}>
-                <Plus className="w-4 h-4 mr-2" />
-                Tạo card visit
-              </Button>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {isAdmin ? "Tạo card visit đầu tiên của bạn để bắt đầu" : "Chỉ admin mới có quyền tạo card visit"}
+              </p>
+              {isAdmin && (
+                <Button onClick={() => router.push("/")}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tạo card visit
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : filteredCards.length === 0 ? (
@@ -388,15 +419,17 @@ export default function MyCardsPage() {
                       <span className="hidden sm:inline">Xem</span>
                     </Button>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="cursor-pointer flex items-center justify-center"
-                      onClick={() => router.push(`/edit/${card.slug}`)}
-                      title="Chỉnh sửa"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="cursor-pointer flex items-center justify-center"
+                        onClick={() => router.push(`/edit/${card.slug}`)}
+                        title="Chỉnh sửa"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                    )}
 
                     <Button
                       size="sm"
@@ -409,18 +442,20 @@ export default function MyCardsPage() {
                     </Button>
                   </div>
 
-                  <div className="mt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDeleteCard(card.slug || card.id, card.name)}
-                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer flex items-center justify-center"
-                      title="Xóa card"
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" />
-                      <span className="text-xs">Xóa</span>
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteCard(card.slug || card.id, card.name)}
+                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer flex items-center justify-center"
+                        title="Xóa card"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        <span className="text-xs">Xóa</span>
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

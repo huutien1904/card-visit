@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -42,18 +42,33 @@ export function Navigation() {
   };
 
   const navItems = [
-    {
-      href: "/",
-      label: "Trang chủ",
-      icon: Home,
-      description: "Tạo card visit mới",
-    },
-    {
-      href: "/my-cards",
-      label: "Danh sách Card",
-      icon: List,
-      description: "Xem tất cả card visits",
-    },
+    ...(isAdmin
+      ? [
+          {
+            href: "/",
+            label: "Trang chủ",
+            icon: Home,
+            description: "Tạo card visit mới",
+          },
+        ]
+      : [
+          {
+            href: "/dashboard",
+            label: "Dashboard",
+            icon: Home,
+            description: "Trang chủ người dùng",
+          },
+        ]),
+    ...(isAdmin
+      ? [
+          {
+            href: "/my-cards",
+            label: "Danh sách Card",
+            icon: List,
+            description: "Quản lý tất cả card visits",
+          },
+        ]
+      : []),
   ];
 
   return (
