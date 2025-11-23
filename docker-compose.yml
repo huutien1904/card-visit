@@ -1,0 +1,28 @@
+# Docker Compose for ecard.vn
+version: "3.8"
+
+services:
+  ecard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecard-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://ecard.vn
+      - NEXT_PUBLIC_APP_URL=https://ecard.vn
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - JWT_SECRET=${JWT_SECRET}
+    env_file:
+      - .env.production
+    networks:
+      - ecard-network
+
+networks:
+  ecard-network:
+    driver: bridge

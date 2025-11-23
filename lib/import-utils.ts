@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { ImportCardData, ImportResult, ProcessedCardData } from "@/types/import";
 import { COVER_IMAGES, CoverImageId } from "@/lib/cover-images";
 
@@ -23,6 +22,9 @@ export function validateExcelFile(file: File): string | null {
 }
 
 export async function parseExcelFile(file: File): Promise<ImportCardData[]> {
+  // Dynamic import xlsx to avoid build issues
+  const XLSX = await import("xlsx");
+
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "buffer" });
   const firstSheetName = workbook.SheetNames[0];
