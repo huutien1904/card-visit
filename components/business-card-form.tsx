@@ -325,12 +325,12 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
         id: result.id,
         slug: result.slug,
         ...formData,
-        qrCode: await generateQRCode({
-          id: result.id,
-          slug: result.slug,
-          ...formData,
-          createdAt: result.createdAt,
-        }),
+        // qrCode: await generateQRCode({
+        //   id: result.id,
+        //   slug: result.slug,
+        //   ...formData,
+        //   createdAt: result.createdAt,
+        // }),
         createdAt: result.createdAt,
       };
 
@@ -384,18 +384,6 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
               className={errors.name ? "border-red-500" : ""}
             />
             {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
-
-            {formData.name && (
-              <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">🔗 URL card visit của bạn:</p>
-                <p className="text-sm font-mono text-blue-800 dark:text-blue-200 break-all">
-                  {getCardUrl(createSlug(formData.name), formData.imageCover)}
-                </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  Domain: {getDomainForCover(formData.imageCover)}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Chức vụ */}
@@ -550,49 +538,6 @@ export function BusinessCardForm({ onSubmit, onPreview, initialData, isEditMode 
               />
             </div>
             {errors.imageCover && <p className="text-sm text-red-500 mt-1">{errors.imageCover}</p>}
-
-            {/* Domain Info */}
-            {(() => {
-              const domainType = getDomainType(formData.imageCover);
-              const domain = getDomainForCover(formData.imageCover);
-
-              const domainConfig = {
-                dev: {
-                  color: "blue",
-                  icon: "🔧",
-                  title: "Development Domain",
-                  description: "Localhost - Dành cho phát triển",
-                },
-                ai: {
-                  color: "green",
-                  icon: "🚀",
-                  title: "AI Domain",
-                  description: "Dành cho DigiLife và VN Sky",
-                },
-                main: {
-                  color: "purple",
-                  icon: "🏢",
-                  title: "Main Domain",
-                  description: "Dành cho VNS và VN Sky VNS",
-                },
-              };
-
-              const config = domainConfig[domainType];
-
-              return (
-                <div
-                  className={`mt-2 p-3 bg-${config.color}-50 dark:bg-${config.color}-900/20 rounded-lg border border-${config.color}-200 dark:border-${config.color}-800`}
-                >
-                  <p className={`text-sm text-${config.color}-700 dark:text-${config.color}-300 mb-1`}>
-                    🌐 Domain sẽ sử dụng:
-                  </p>
-                  <p className={`text-sm font-mono text-${config.color}-800 dark:text-${config.color}-200`}>{domain}</p>
-                  <p className={`text-xs text-${config.color}-600 dark:text-${config.color}-400 mt-1`}>
-                    {config.icon} {config.title} - {config.description}
-                  </p>
-                </div>
-              );
-            })()}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-6">

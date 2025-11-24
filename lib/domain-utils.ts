@@ -37,13 +37,6 @@ export function getCardUrl(slug: string, imageCoverPath: string): string {
   return `${domain}/${slug}`;
 }
 
-export function isAiDomain(imageCoverPath: string): boolean {
-  if (isDevelopment()) return false;
-
-  const domain = getDomainForCover(imageCoverPath);
-  return domain === AI_DOMAIN;
-}
-
 export function getAllDomains() {
   return {
     ai: AI_DOMAIN,

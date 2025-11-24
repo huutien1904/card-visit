@@ -3,7 +3,6 @@
 import type { BusinessCardData } from "@/app/page";
 import { Button } from "@/components/ui/button";
 import { removeVietnameseAccents, translateJobTitle } from "@/lib/language-utils";
-import { getCardUrl } from "@/lib/domain-utils";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -17,11 +16,11 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
   const [isEnglish, setIsEnglish] = useState(false);
 
   useEffect(() => {
-    if (data?.slug && data?.imageCover) {
-      const cardUrl = getCardUrl(data.slug, data.imageCover);
-      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(cardUrl)}`);
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/${data?.slug}`;
+      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`);
     }
-  }, [data?.slug, data?.imageCover]);
+  }, [data?.slug]);
 
   const toggleLanguage = () => {
     setIsEnglish(!isEnglish);
