@@ -1,6 +1,6 @@
 "use client";
 import type { BusinessCardData } from "@/app/page";
-import { BusinessCardPreview } from "@/components/business-card-preview";
+import { CardDetailWithCaptcha } from "@/components/card-detail-with-captcha";
 import { ErrorDisplay } from "@/components/error-display";
 import { useFirebaseCardBySlug } from "@/hooks/use-firebase-cards";
 import { useParams, useRouter } from "next/navigation";
@@ -73,11 +73,5 @@ export default function CardSlugPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto">
-        <BusinessCardPreview data={cardData} isDetailMode />
-      </div>
-    </div>
-  );
+  return <CardDetailWithCaptcha cardData={cardData} />;
 }

@@ -139,3 +139,53 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
 }
+
+.recaptcha-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.recaptcha-container iframe {
+  /* Make reCAPTCHA responsive */
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mobile responsive reCAPTCHA */
+@media (max-width: 480px) {
+  .recaptcha-container {
+    transform: scale(0.9);
+    transform-origin: center;
+  }
+
+  .recaptcha-container iframe {
+    width: 100% !important;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 350px) {
+  .recaptcha-container {
+    transform: scale(0.8);
+  }
+}
+
+/* Smooth animations */
+.recaptcha-wrapper * {
+  transition: all 0.3s ease;
+}
+
+/* Loading animation enhancement */
+@keyframes recaptcha-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.recaptcha-loading {
+  animation: recaptcha-pulse 1.5s ease-in-out infinite;
+}
