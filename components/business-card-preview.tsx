@@ -62,51 +62,113 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
       .filter((line) => line.trim() !== "")
       .join("\n");
 
-    // Kiểm tra xem có phải mobile không
-    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Detect device type
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = isIOS || isAndroid;
 
-    if (isMobile && navigator.share) {
-      // Sử dụng Web Share API cho mobile
-      try {
-        const blob = new Blob([vCardContent], { type: "text/vcard" });
-        const file = new File([blob], `${displayName}.vcf`, { type: "text/vcard" });
-
-        await navigator.share({
-          title: `Liên hệ - ${displayName}`,
-          text: `Thông tin liên hệ của ${displayName}`,
-          files: [file],
-        });
-        return;
-      } catch (error) {
-        console.log("Web Share API không khả dụng, fallback to download");
-      }
-    }
-
-    // Fallback: tạo data URL với MIME type chuẩn cho vCard
+    // Tạo data URL cho vCard
     const dataUrl = `data:text/vcard;charset=utf-8,${encodeURIComponent(vCardContent)}`;
 
-    // Thử mở trực tiếp với intent Android
-    if (/Android/i.test(navigator.userAgent)) {
+    if (isMobile) {
+      // Thử Web Share API trước (cho iOS modern)
+      if (navigator.share && navigator.canShare) {
+        try {
+          const blob = new Blob([vCardContent], { type: "text/vcard" });
+          const file = new File([blob], `${displayName}.vcf`, { type: "text/vcard" });
+          
+          const canShareFile = navigator.canShare({ files: [file] });
+          
+          if (canShareFile) {
+            await navigator.share({
+              title: `Contact - ${displayName}`,
+              text: `Contact information for ${displayName}`,
+              files: [file],
+            });
+            return;
+          }
+        } catch (error) {
+          console.log("Web Share API with file failed:", error);
+        }
+      }
+
+      // Trên mobile: Mở data URL trực tiếp để trigger contact app
       try {
-        // Tạo intent để mở trong ứng dụng Contacts
-        window.location.href = dataUrl;
+        // Tạo một link ẩn và click để mở contact app
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.style.display = 'none';
+        
+        // Thêm các attributes để đảm bảo mở contact app
+        link.setAttribute('download', `${displayName.replace(/[^a-zA-Z0-9]/g, '_')}.vcf`);
+        link.setAttribute('type', 'text/vcard');
+        
+        document.body.appendChild(link);
+        
+        // Trigger click event
+        if (isIOS) {
+          // iOS: Thử nhiều cách để mở contact app
+          // Cách 1: Sử dụng window.open với data URL
+          const contactWindow = window.open(dataUrl, '_blank');
+          
+          // Cách 2: Fallback với location.href
+          if (!contactWindow) {
+            setTimeout(() => {
+              window.location.href = dataUrl;
+            }, 100);
+          }
+        } else if (isAndroid) {
+          // Android: Click link để trigger intent
+          link.click();
+          
+          // Fallback: Thử mở với window.location
+          setTimeout(() => {
+            if (link.parentNode) {
+              window.location.href = dataUrl;
+            }
+          }, 500);
+        } else {
+          // Mobile khác: Click thông thường
+          link.click();
+        }
+        
+        // Cleanup
+        setTimeout(() => {
+          document.body.removeChild(link);
+        }, 1000);
+        
         return;
       } catch (error) {
-        console.log("Android intent failed, fallback to download");
+        console.log("Direct contact app opening failed:", error);
       }
     }
 
-    // Fallback cuối cùng: download file
-    const blob = new Blob([vCardContent], { type: "text/vcard" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${displayName}.vcf`;
-    link.setAttribute("type", "text/vcard");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Fallback cho desktop hoặc khi mobile method fails
+    // Tạo blob và force download
+    try {
+      const blob = new Blob([vCardContent], { type: "text/vcard;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      
+      link.href = url;
+      link.download = `${displayName.replace(/[^a-zA-Z0-9]/g, '_')}.vcf`;
+      link.setAttribute("type", "text/vcard");
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error("VCard creation failed:", error);
+      // Final fallback: copy contact info to clipboard
+      const contactText = `${displayName}\n${displayTitle}\n${data.phone1 || ''}\n${data.email1 || ''}`;
+      navigator.clipboard?.writeText(contactText);
+      alert("Đã copy thông tin liên hệ vào clipboard!");
+    }
   };
 
   return (
