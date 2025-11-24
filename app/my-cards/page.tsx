@@ -2,6 +2,7 @@
 
 import type { BusinessCardData } from "@/app/page";
 import { ErrorDisplay } from "@/components/error-display";
+import { ImportModal } from "@/components/import-modal";
 import { Navigation } from "@/components/navigation";
 import {
   AlertDialog,
@@ -17,13 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/auth-context";
 import { useFirebaseCards } from "@/hooks/use-firebase-cards";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Eye, Plus, QrCode, Search, Share2, Trash2, X, FileUp } from "lucide-react";
+import { getCardUrl, getDomainType } from "@/lib/domain-utils";
+import { Edit, Eye, FileUp, Plus, QrCode, Search, Share2, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ImportModal } from "@/components/import-modal";
-import { useAuth } from "@/contexts/auth-context";
 
 export default function MyCardsPage() {
   const router = useRouter();
@@ -147,7 +148,7 @@ export default function MyCardsPage() {
   };
 
   const handleShareCard = async (card: BusinessCardData) => {
-    const url = `${window.location.origin}/${card.slug}`;
+    const url = getCardUrl(card.slug, card.imageCover);
 
     if (navigator.share) {
       try {
@@ -230,7 +231,7 @@ export default function MyCardsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <Navigation />
 
       <div className="container mx-auto px-4 py-8">
@@ -397,6 +398,21 @@ export default function MyCardsPage() {
                       <Badge variant="secondary" className="text-xs">
                         Tạo: {new Date(card.createdAt).toLocaleDateString("vi-VN")}
                       </Badge>
+                      {(() => {
+                        const domainType = getDomainType(card.imageCover);
+                        const badgeConfig = {
+                          dev: { variant: "secondary" as const, icon: "🔧", label: "Dev" },
+                          ai: { variant: "default" as const, icon: "🚀", label: "AI Domain" },
+                          main: { variant: "outline" as const, icon: "🏢", label: "Main Domain" },
+                        };
+                        const config = badgeConfig[domainType];
+
+                        return (
+                          <Badge variant={config.variant} className="text-xs flex items-center gap-1">
+                            {config.icon} {config.label}
+                          </Badge>
+                        );
+                      })()}
                       {card.qrCode && (
                         <Badge variant="outline" className="text-xs flex items-center gap-1">
                           <QrCode className="w-3 h-3" />

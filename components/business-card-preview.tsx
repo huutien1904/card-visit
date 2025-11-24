@@ -3,6 +3,7 @@
 import type { BusinessCardData } from "@/app/page";
 import { Button } from "@/components/ui/button";
 import { removeVietnameseAccents, translateJobTitle } from "@/lib/language-utils";
+import { getCardUrl } from "@/lib/domain-utils";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -16,11 +17,11 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
   const [isEnglish, setIsEnglish] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/${data?.slug}`;
-      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`);
+    if (data?.slug && data?.imageCover) {
+      const cardUrl = getCardUrl(data.slug, data.imageCover);
+      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(cardUrl)}`);
     }
-  }, [data?.slug]);
+  }, [data?.slug, data?.imageCover]);
 
   const toggleLanguage = () => {
     setIsEnglish(!isEnglish);
@@ -64,17 +65,17 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
 
     // Kiểm tra xem có phải mobile không
     const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
+
     if (isMobile && navigator.share) {
       // Sử dụng Web Share API cho mobile
       try {
         const blob = new Blob([vCardContent], { type: "text/vcard" });
         const file = new File([blob], `${displayName}.vcf`, { type: "text/vcard" });
-        
+
         await navigator.share({
           title: `Liên hệ - ${displayName}`,
           text: `Thông tin liên hệ của ${displayName}`,
-          files: [file]
+          files: [file],
         });
         return;
       } catch (error) {
@@ -84,7 +85,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
 
     // Fallback: tạo data URL với MIME type chuẩn cho vCard
     const dataUrl = `data:text/vcard;charset=utf-8,${encodeURIComponent(vCardContent)}`;
-    
+
     // Thử mở trực tiếp với intent Android
     if (/Android/i.test(navigator.userAgent)) {
       try {
