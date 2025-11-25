@@ -12,9 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useFirebaseCards } from "@/hooks/use-firebase-cards";
 import { useToast } from "@/hooks/use-toast";
 import { COVER_IMAGES } from "@/lib/cover-images";
-import { getCardUrl, getDomainForCover, getDomainType } from "@/lib/domain-utils";
 import { createSlug } from "@/lib/slug-utils";
-import { generateQRCode } from "@/lib/qr-utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
