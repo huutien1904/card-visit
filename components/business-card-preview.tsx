@@ -2,7 +2,7 @@
 
 import type { BusinessCardData } from "@/app/page";
 import { Button } from "@/components/ui/button";
-import { removeVietnameseAccents, translateJobTitle } from "@/lib/language-utils";
+import { removeVietnameseAccents, translateJobTitle, translateCompanyName } from "@/lib/language-utils";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -35,7 +35,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
   };
 
   const getDisplayCompany = () => {
-    return isEnglish ? removeVietnameseAccents(data?.company || "") : data?.company || "";
+    return isEnglish ? translateCompanyName(data?.company || "") : data?.company || "";
   };
 
   const getDisplayAddress = () => {
@@ -124,11 +124,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
               </div>
             </div>
             <p className="text-primary-blue text-base">{getDisplayTitle()}</p>
-            {data?.company && (
-              <p className="text-primary-blue text-sm mt-1 font-medium">
-                {isEnglish ? "Company" : "Công ty"} {getDisplayCompany()}
-              </p>
-            )}
+            {data?.company && <p className="text-primary-blue text-sm mt-1 font-medium">{getDisplayCompany()}</p>}
           </div>
 
           <div className="mb-6">

@@ -248,3 +248,19 @@ export function translateJobTitle(vietnameseTitle: string): string {
 
   return vietnameseTitle;
 }
+
+export const translateCompanyName = (vietnameseCompany: string): string => {
+  if (!vietnameseCompany) return "";
+
+  const companyUpper = vietnameseCompany.toUpperCase();
+
+  if (companyUpper.includes("DIGILIFE")) {
+    return "DIGILIFE VIET NAM DIGITAL SERVICES COMPANY LIMITED";
+  }
+
+  if (companyUpper.includes("CÔNG NGHỆ VÀ GIẢI PHÁP")) {
+    return "VIETNAM TECHNOLOGY AND DIGITAL SOLUTIONS CORPORATION";
+  }
+
+  return removeVietnameseAccents(vietnameseCompany);
+};
