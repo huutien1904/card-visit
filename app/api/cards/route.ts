@@ -70,10 +70,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      if (body.company !== undefined && body.company.toString().trim() === "") {
-        return NextResponse.json({ error: "Trường công ty không được để trống nếu được cung cấp" }, { status: 400 });
-      }
-
       const baseSlug = createSlug(body.name);
 
       const cardsRef = adminDb.collection("cards");

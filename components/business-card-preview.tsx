@@ -2,7 +2,7 @@
 
 import type { BusinessCardData } from "@/app/page";
 import { Button } from "@/components/ui/button";
-import { removeVietnameseAccents, translateJobTitle, translateCompanyName } from "@/lib/language-utils";
+import { removeVietnameseAccents, translateJobTitle, translateCompanyName, translateAddress } from "@/lib/language-utils";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -39,7 +39,7 @@ export function BusinessCardPreview({ data, isDetailMode }: BusinessCardPreviewP
   };
 
   const getDisplayAddress = () => {
-    return isEnglish ? removeVietnameseAccents(data?.address || "") : data?.address || "";
+    return isEnglish ? translateAddress(data?.address || "") : data?.address || "";
   };
 
   const downloadVCard = () => {

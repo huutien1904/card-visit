@@ -264,3 +264,16 @@ export const translateCompanyName = (vietnameseCompany: string): string => {
 
   return removeVietnameseAccents(vietnameseCompany);
 };
+
+// Function to translate address to English
+export const translateAddress = (vietnameseAddress: string): string => {
+  if (!vietnameseAddress) return "";
+
+  // Check if address contains "36 Hoàng Cầu"
+  if (vietnameseAddress.includes("36 Hoàng Cầu") || vietnameseAddress.includes("36 Hoang Cau")) {
+    return "11th Floor, No. 36 Hoang Cau Street, O Cho Dua Ward, Dong Da District, Hanoi, Vietnam";
+  }
+
+  // Default: remove Vietnamese accents
+  return removeVietnameseAccents(vietnameseAddress);
+};
